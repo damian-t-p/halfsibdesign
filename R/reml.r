@@ -1,3 +1,10 @@
+#' Compute the REML criterion
+#'
+#' Computes the REML criterion for a 2-way design.
+#'
+#' @param S1,S2,S3 Covariance estimates
+#' @param M1,M2,M3 Sum-of-squares matrices
+#' @param I1,I2,I3 Numbers of groups
 #' @export
 reml_crit <- function(M1, S1, I1, M2, S2, I2, M3, S3, I3) {
   p <- nrow(M1)
