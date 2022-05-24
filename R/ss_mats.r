@@ -43,6 +43,9 @@
 #'   \item `q`: The dimensionality of the responses
 #'   \item `I`, `J`, `K`: The number of sires, dams per sire and individuals per dam
 #' }
+#'
+#' @importFrom rlang .data
+#'
 #' @export
 ss_mats <- function(df) {
 
@@ -52,12 +55,12 @@ ss_mats <- function(df) {
   K <- (df$individual %>% unique %>% length) / (I*J)
 
   df_means <- df %>%
-    dplyr::group_by(trait) %>%
-    dplyr::mutate(grand = mean(value)) %>%
-    dplyr::group_by(trait, sire) %>%
-    dplyr::mutate(sire = mean(value)) %>%
-    dplyr::group_by(trait, sire, dam) %>%
-    dplyr::mutate(dam = mean(value)) %>%
+    dplyr::group_by(.data$trait) %>%
+    dplyr::mutate(grand = mean(.data$value)) %>%
+    dplyr::group_by(.data$trait, .data$sire) %>%
+    dplyr::mutate(sire = mean(.data$value)) %>%
+    dplyr::group_by(.data$trait, .data$sire, .data$dam) %>%
+    dplyr::mutate(dam = mean(.data$value)) %>%
     dplyr::ungroup()
 
   vals <- df_means$value %>% matrix(nrow = q)

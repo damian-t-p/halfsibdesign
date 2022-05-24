@@ -7,16 +7,16 @@
 rhalfsib(mu, A, I, B, J, E, K)
 }
 \arguments{
-\item{mu}{Mean vector}
+\item{mu}{Mean vector.}
 
-\item{A, B, E}{Covariance matrices of the sires dams and individuals}
+\item{A, B, E}{Covariance matrices of the sires dams and individuals.}
 
-\item{I, J, K}{Number of sires, dams per sire and individuals per dam}
+\item{I, J, K}{Number of sires, dams per sire and individuals per dam.}
 }
 \value{
 A \code{tibble} with column names \code{trait}, \code{value}, \code{sire},
 \code{dam}, \code{individual}. The \code{value} column contains the response values whose
-dimenstion is indexed by \code{trait}.
+dimension is indexed by \code{trait}.
 }
 \description{
 Sample responses from the following model:

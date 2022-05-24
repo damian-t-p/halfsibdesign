@@ -6,12 +6,14 @@
 #' \beta_{ij}, \epsilon_{ijk}} are independent mean-zero multivariate
 #' Gaussians with covariance matrices \eqn{A, B, E} respectively.
 #'
-#' @param mu Mean vector
-#' @param A,B,E Covariance matrices of the sires dams and individuals
-#' @param I,J,K Number of sires, dams per sire and individuals per dam
+#' @param mu Mean vector.
+#' @param A,B,E Covariance matrices of the sires dams and individuals.
+#' @param I,J,K Number of sires, dams per sire and individuals per dam.
+#'
 #' @return A `tibble` with column names `trait`, `value`, `sire`,
 #' `dam`, `individual`. The `value` column contains the response values whose
-#' dimenstion is indexed by `trait`.
+#' dimension is indexed by `trait`.
+#'
 #' @export
 rhalfsib <- function(mu, A, I, B, J, E, K) {
   q <- length(mu)

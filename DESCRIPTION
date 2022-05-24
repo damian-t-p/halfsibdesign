@@ -16,6 +16,7 @@ Imports:
     MASS,
     methods,
     nlme,
+    rlang,
     tibble
 Suggests: 
     testthat (>= 3.0.0)
