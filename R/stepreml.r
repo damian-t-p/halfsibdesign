@@ -1,17 +1,26 @@
-#' Compute 1- or 2-way REML estimates with a stepwise method
+#' Compute 2-way REML estimates with a stepwise method
 #'
 #' Given either a tuple of sum-of-squares matrices or a dataframe, computes
-#' stepwise REML estimates for the covariances
+#' REML estimates for the covariances using a stepwise algorithm.
+#'
+#' The stepwise algorithm is described in \[1\]. Its convergence is proved in
+#' that paper. Although the speed of convergence is not established therein, in
+#' practice it is linear.
+#'
 #' @name stepreml
+#'
+#' @return A list with entries `S1`, `S2` and `S3`, which are the estimates of
+#' the sires, dams and individual covariance matrices.
+#'
+#' @references \[1\] J. A. Calvin and R. L. Dykstra. "Maximum Likelihood Estimation
+#' of a Set of Covariance Matrices Under Lowner Order Restrictions with Applications
+#' to Balanced Multivariate Variance Components Models". In: *The Annals of Staistics*
+#' 19.2 (1991).
+#'
 #' @seealso \code{\link{stepreml_2way}} for generic version.
 NULL
 #> NULL
 
-#' @rdname stepreml
-#' @param A1,A2 Sum-of-squares matrices
-#' @param n1,n2 number of lines
-#'
-#' @export
 stepreml_1way <- function(A1, n1, A2, n2) {
 
   # sample covariances
@@ -50,6 +59,13 @@ stepreml_1way <- function(A1, n1, A2, n2) {
 }
 
 #' @rdname stepreml
+#' @param M1,M2,M3 Sum-of-squares matrices within sire, dam and individual groups.
+#' @param I1,I2,I3 Number of sires, dams per sire and individuals per dam.
+#' @param max_iter Number of iterations allowed before termination.
+#' @param err.tol Algorithm terminates when the differences between subsequent
+#' matrices in the matric described in \[1\] fall below this threshold.
+#' @param verbose If this is `TRUE`, the output will contain a field
+#' `conv_details` containing information about the algorithm's convergence.
 #' @export
 stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6, verbose = FALSE) {
 
@@ -158,6 +174,7 @@ stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6,
 #' @rdname stepreml
 #' @export
 #' @param df Data frame for 2-way design
+#' @param ... Other arguments.
 stepreml_2way_df <- df_cov_estimate(stepreml_2way_mat)
 
 mat_err <- function(Sig_curr_list, Sig_prev_list, n_list) {

@@ -1,0 +1,89 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# halfsibdesign
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+A package containing several algorithms for finding REML estimates for covariances
+in the balanced $q$-dimenstional half-sib design
+\[
+  y_{ijk}
+  = \mu + \alpha_i + \beta_{ij} + \epsilon_{ijk},
+  \quad
+  1\leq i \leq I,
+  1\leq j \leq J,
+  1\leq k \leq K.
+\]
+where 
+\[
+  \alpha_i \sim \mathcal{N}(0, A),
+  \quad
+  \beta_{ij} \sim \mathcal{N}(0, B).
+  \quad
+  \epsilon_{ijk} \sim \mathcal{N}(0, E).
+\]
+
+## Installation
+
+You can install the development version of halfsibdesign from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("damian-t-p/halfsibdesign")
+```
+
+## Example
+
+Simulate a half-sib experiment with specified parameters:
+
+```{r example}
+set.seed(1)
+
+library(halfsibdesign)
+
+q <- 4 # number of traits
+
+I <- 100 # number of sires
+J <- 3 # number of dams
+K <- 5 # number of individuals per line
+
+mu <- 1:q
+
+sigma_a <- 5
+sigma_b <- 3
+sigma_e <- 1
+
+A <- sigma_a^2 * diag(c(0, 0, 1, 1))
+B <- sigma_b^2 * diag(q)
+E <- sigma_e^2 * diag(q)
+
+df <- rhalfsib(mu, A, I, B, J, E, K)
+```
+
+First, perform a MANOVA fit
+```{r}
+manova_2way(df)
+```
+
+Notice that `S3`, the within-sires estimate is not non-negative definite, se we 
+compute the correponding REML estimate.
+
+```{r}
+stepreml_2way(df)
+```
+
+

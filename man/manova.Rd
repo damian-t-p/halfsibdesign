@@ -14,15 +14,26 @@ manova_2way_mat(M1, I1, M2, I2, M3, I3)
 manova_2way_df(df, ...)
 }
 \arguments{
-\item{Mw, Mb}{Sum-of-squares within and between matrices}
+\item{Mw, Mb}{Sum-of-squares within and between matrices.}
 
-\item{r, n}{Number of}
+\item{r, n}{Number individuals per group and groups.}
 
-\item{M1, M2, M3}{Sum-of-squares matrices within sire, dam and individual groups}
+\item{M1, M2, M3}{Sum-of-squares matrices within sire, dam and individual groups.}
 
-\item{I1, I2, I3}{Number of sires, dams per sire and individuals per dam}
+\item{I1, I2, I3}{Number of sires, dams per sire and individuals per dam.}
 
-\item{df}{Data frame for 2-way design}
+\item{df}{Data frame for 2-way design.}
+
+\item{...}{Other arguments.}
+}
+\value{
+A list with entries
+\itemize{
+\item in the one-way case: \code{Sb}, \code{Sw}, which are the estimates of
+the between-groups and within-groups covariance matrices.
+\item in the two-way case: \code{S1}, \code{S2} and \code{S3}, which are the estimates of
+the sires, dams and individual covariance matrices.
+}
 }
 \description{
 Given either a tuple of sum-of-squares matrices or a dataframe, computes

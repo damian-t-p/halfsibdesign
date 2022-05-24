@@ -2,13 +2,10 @@
 % Please edit documentation in R/stepreml.r
 \name{stepreml}
 \alias{stepreml}
-\alias{stepreml_1way}
 \alias{stepreml_2way_mat}
 \alias{stepreml_2way_df}
-\title{Compute 1- or 2-way REML estimates with a stepwise method}
+\title{Compute 2-way REML estimates with a stepwise method}
 \usage{
-stepreml_1way(A1, n1, A2, n2)
-
 stepreml_2way_mat(
   M1,
   I1,
@@ -24,15 +21,40 @@ stepreml_2way_mat(
 stepreml_2way_df(df, ...)
 }
 \arguments{
-\item{A1, A2}{Sum-of-squares matrices}
+\item{M1, M2, M3}{Sum-of-squares matrices within sire, dam and individual groups.}
 
-\item{n1, n2}{number of lines}
+\item{I1, I2, I3}{Number of sires, dams per sire and individuals per dam.}
+
+\item{max_iter}{Number of iterations allowed before termination.}
+
+\item{err.tol}{Algorithm terminates when the differences between subsequent
+matrices in the matric described in [1] fall below this threshold.}
+
+\item{verbose}{If this is \code{TRUE}, the output will contain a field
+\code{conv_details} containing information about the algorithm's convergence.}
 
 \item{df}{Data frame for 2-way design}
+
+\item{...}{Other arguments.}
+}
+\value{
+A list with entries \code{S1}, \code{S2} and \code{S3}, which are the estimates of
+the sires, dams and individual covariance matrices.
 }
 \description{
 Given either a tuple of sum-of-squares matrices or a dataframe, computes
-stepwise REML estimates for the covariances
+REML estimates for the covariances using a stepwise algorithm.
+}
+\details{
+The stepwise algorithm is described in [1]. Its convergence is proved in
+that paper. Although the speed of convergence is not established therein, in
+practice it is linear.
+}
+\references{
+[1] J. A. Calvin and R. L. Dykstra. "Maximum Likelihood Estimation
+of a Set of Covariance Matrices Under Lowner Order Restrictions with Applications
+to Balanced Multivariate Variance Components Models". In: \emph{The Annals of Staistics}
+19.2 (1991).
 }
 \seealso{
 \code{\link{stepreml_2way}} for generic version.

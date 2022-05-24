@@ -3,20 +3,46 @@
 \name{twoway}
 \alias{twoway}
 \alias{manova_2way}
+\alias{manova_2way,matrix-method}
+\alias{manova_2way,data.frame-method}
 \alias{preml_2way}
+\alias{preml_2way,matrix-method}
+\alias{preml_2way,data.frame-method}
 \alias{stepreml_2way}
+\alias{stepreml_2way,matrix-method}
+\alias{stepreml_2way,data.frame-method}
 \title{Compute covariance estimates for half-sib balanced designs}
 \usage{
 manova_2way(object, ...)
 
+\S4method{manova_2way}{matrix}(object, ...)
+
+\S4method{manova_2way}{data.frame}(object, ...)
+
 preml_2way(object, ...)
 
+\S4method{preml_2way}{matrix}(object, ...)
+
+\S4method{preml_2way}{data.frame}(object, ...)
+
 stepreml_2way(object, ...)
+
+\S4method{stepreml_2way}{matrix}(object, ...)
+
+\S4method{stepreml_2way}{data.frame}(object, ...)
 }
 \arguments{
 \item{object}{An object for which a sum-of-squares matrix can be computed.}
 
 \item{...}{Other arguments.}
+}
+\value{
+A list with entries
+\itemize{
+\item \code{S1}, \code{S2} and \code{S3}, the estimates of #' the sires, dams and
+individual covariance matrices,
+\item \code{reml_crit}, the REML criterion evaluated at the estimate.
+}`
 }
 \description{
 Generic function sfor computing MANOVA estimates for a balanced half-sib design
