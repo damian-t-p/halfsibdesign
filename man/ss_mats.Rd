@@ -19,17 +19,38 @@ A list with the following entries:
 }
 }
 \description{
-Given a dataframe of half-sib responses \eqn{y_{ijk}}, computes the following
+Given a dataframe of half-sib responses \eqn{y_{ijk}}{y[ijk]}, computes the following
 matrices:
-\deqn{S_A = \frac{JK}{I-1}\sum_{i} (\bar{y}_{i} - \bar{y}) (y_{i} - \bar{y})'}
-\deqn{S_B = \frac{K}{I(J-1)}\sum_{i,j} (\bar{y}_{ij} - \bar{y}_{i})
-(\bar{y}_{ij} - \bar{y}_{i})'}
-\deqn{S_E = \frac{1}{IJ(K-1)}\sum_{i,j,k} (y_{ijk} - \bar{y}_{ij})
-(y_{ijk} - \bar{y}_{ij})'}
-These matrices satisfy
-\deqn{E S_E = E,
-E S_B = E + K B,
-E S_A = E + K B + JK A,}
-where A, B, E are the population covariance matrices of the sires, dams and
+These matrices are given by
+\deqn{
+M_A = \frac{JK}{I-1}\sum_{i} (\bar{y}_{i} - \bar{y}) (y_{i} - \bar{y})'
+}{
+M[A] = (JK)/(I-1) * \Sigma (mu[i] - mu)(mu[i] - mu)'
+}
+\deqn{
+M_B = \frac{K}{I(J-1)}\sum_{i,j} (\bar{y}_{ij} - \bar{y}_{i})
+(\bar{y}_{ij} - \bar{y}_{i})'
+}{
+M[B] = K/(I(J-1)) * \Sigma (mu[ij] - mu[i]) (mu[ij] - mu[i])'
+}
+\deqn{
+M_E = \frac{1}{IJ(K-1)}\sum_{i,j,k} (y_{ijk} - \bar{y}_{ij})
+(y_{ijk} - \bar{y}_{ij})'
+}{
+M[E] = 1/(IJ(K-1) * \Sigma (mu[ijk] - mu[ij]) (mu[ijk] - mu[ij])',
+}
+and satisfy
+\deqn{
+\mathbf{E} M_E = E,
+\mathbf{E} M_B = E + KB
+\mathbf{E} M_A = K + KB + JKA
+}{
+E(M[E]) = E,
+E(M[B]) = E + K B,
+E(M[A]) = E + K B + JK A,
+}
+}
+\details{
+where \eqn{A}, \eqn{B}, \eqn{E} are the population covariance matrices of the sires, dams and
 individuals respectively.
 }

@@ -3,13 +3,13 @@
 \name{preml}
 \alias{preml}
 \alias{preml_1way}
-\alias{preml_2way}
+\alias{preml_2way_mat}
 \alias{preml_2way_df}
 \title{Compute 1- or 2-way pseudo-REML estimates}
 \usage{
 preml_1way(Mw, r, Mb, n)
 
-preml_2way(M1, I1, M2, I2, M3, I3)
+preml_2way_mat(M1, I1, M2, I2, M3, I3)
 
 preml_2way_df(df, ...)
 }
@@ -18,9 +18,16 @@ preml_2way_df(df, ...)
 
 \item{r, n}{Number of}
 
+\item{M1, M2, M3}{Sum-of-squares matrices within sire, dam and individual groups}
+
+\item{I1, I2, I3}{Number of sires, dams per sire and individuals per dam}
+
 \item{df}{Data frame for 2-way design}
 }
 \description{
 Given either a tuple of sum-of-squares matrices or a dataframe, computes
 preudo-REML estimates for the covariances
+}
+\seealso{
+\code{\link{preml_2way}} for generic version.
 }

@@ -1,6 +1,6 @@
 #' Compute the REML criterion
 #'
-#' Computes the REML criterion for a 2-way design.
+#' Computes the REML criterion for a balanced 2-way design.
 #'
 #' @param S1,S2,S3 Covariance estimates
 #' @param M1,M2,M3 Sum-of-squares matrices

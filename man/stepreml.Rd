@@ -3,13 +3,13 @@
 \name{stepreml}
 \alias{stepreml}
 \alias{stepreml_1way}
-\alias{stepreml_2way}
+\alias{stepreml_2way_mat}
 \alias{stepreml_2way_df}
 \title{Compute 1- or 2-way REML estimates with a stepwise method}
 \usage{
 stepreml_1way(A1, n1, A2, n2)
 
-stepreml_2way(
+stepreml_2way_mat(
   M1,
   I1,
   M2,
@@ -33,4 +33,7 @@ stepreml_2way_df(df, ...)
 \description{
 Given either a tuple of sum-of-squares matrices or a dataframe, computes
 stepwise REML estimates for the covariances
+}
+\seealso{
+\code{\link{stepreml_2way}} for generic version.
 }

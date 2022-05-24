@@ -3,12 +3,14 @@
 #' Given either a tuple of sum-of-squares matrices or a dataframe, computes
 #' stepwise REML estimates for the covariances
 #' @name stepreml
+#' @seealso \code{\link{stepreml_2way}} for generic version.
 NULL
 #> NULL
 
 #' @rdname stepreml
 #' @param A1,A2 Sum-of-squares matrices
 #' @param n1,n2 number of lines
+#'
 #' @export
 stepreml_1way <- function(A1, n1, A2, n2) {
 
@@ -49,7 +51,7 @@ stepreml_1way <- function(A1, n1, A2, n2) {
 
 #' @rdname stepreml
 #' @export
-stepreml_2way <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6, verbose = FALSE) {
+stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6, verbose = FALSE) {
 
   n1 <- (I1-1)*I2*I3
   n2 <- (I2-1)*I3
@@ -156,7 +158,7 @@ stepreml_2way <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6, ver
 #' @rdname stepreml
 #' @export
 #' @param df Data frame for 2-way design
-stepreml_2way_df <- df_cov_estimate(stepreml_2way)
+stepreml_2way_df <- df_cov_estimate(stepreml_2way_mat)
 
 mat_err <- function(Sig_curr_list, Sig_prev_list, n_list) {
   runsum <- 0

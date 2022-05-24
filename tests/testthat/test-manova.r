@@ -20,8 +20,16 @@ df <- rhalfsib(mu, A, I, B, J, E, K)
 ss <- ss_mats(df)
 
 test_that("Check MANOVA estimates", {
-  fit_ss <- manova_2way(ss$m_ind, ss$K, ss$m_dam, ss$J, ss$m_sire, ss$I)
+  fit_ss <- manova_2way_mat(ss$m_ind, ss$K, ss$m_dam, ss$J, ss$m_sire, ss$I)
   fit_df <- manova_2way_df(df)
 
   expect_mapequal(fit_ss, fit_df)
 })
+
+test_that("Check S3 dispatches", {
+  fit_ss <- manova_2way(ss$m_ind, ss$K, ss$m_dam, ss$J, ss$m_sire, ss$I)
+  fit_df <- manova_2way(df)
+
+  expect_mapequal(fit_ss, fit_df)
+})
+

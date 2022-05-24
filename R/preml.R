@@ -3,12 +3,14 @@
 #' Given either a tuple of sum-of-squares matrices or a dataframe, computes
 #' preudo-REML estimates for the covariances
 #' @name preml
+#' @seealso \code{\link{preml_2way}} for generic version.
 NULL
 #> NULL
 
 #' @rdname preml
 #' @param Mw,Mb Sum-of-squares within and between matrices
 #' @param r,n Number of
+#'
 #' @export
 preml_1way <- function(Mw, r, Mb, n) {
   U <- chol(Mw)
@@ -30,10 +32,15 @@ preml_1way <- function(Mw, r, Mb, n) {
 }
 
 #' @rdname preml
+#' @param M1,M2,M3 Sum-of-squares matrices within sire, dam and individual groups
+#' @param I1,I2,I3 Number of sires, dams per sire and individuals per dam
 #' @export
-preml_2way <- nest_cov_estimate(preml_1way)
+preml_2way_mat <- nest_cov_estimate(preml_1way)
+
 
 #' @rdname preml
 #' @export
 #' @param df Data frame for 2-way design
-preml_2way_df <- df_cov_estimate(preml_2way)
+preml_2way_df <- df_cov_estimate(preml_2way_mat)
+
+

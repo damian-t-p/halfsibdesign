@@ -14,5 +14,5 @@ reml_crit(M1, S1, I1, M2, S2, I2, M3, S3, I3)
 \item{I1, I2, I3}{Numbers of groups}
 }
 \description{
-Computes the REML criterion for a 2-way design.
+Computes the REML criterion for a balanced 2-way design.
 }
