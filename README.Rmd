@@ -19,23 +19,13 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 A package containing several algorithms for finding REML estimates for covariances
-in the balanced $q$-dimenstional half-sib design
-\[
-  y_{ijk}
-  = \mu + \alpha_i + \beta_{ij} + \epsilon_{ijk},
-  \quad
-  1\leq i \leq I,
-  1\leq j \leq J,
-  1\leq k \leq K.
-\]
+in the balanced $q$-dimensional half-sib design
+*y<sub>ijk</sub> = $\mu$ + $\alpha$<sub>i</sub> + $\beta$<sub>ij</sub> + $\epsilon$<sub>ijk</sub>*,
+*$1\leq i \leq I, 1\leq j \leq J, 1\leq k \leq K$*,
 where 
-\[
-  \alpha_i \sim \mathcal{N}(0, A),
-  \quad
-  \beta_{ij} \sim \mathcal{N}(0, B).
-  \quad
-  \epsilon_{ijk} \sim \mathcal{N}(0, E).
-\]
+*$\alpha$<sub>i</sub>* $\sim \mathcal{N}(0, A)$,
+*$\beta$<sub>ij</sub>* $\sim \mathcal{N}(0, B)$,
+*$\epsilon$<sub>ijk</sub>* $\sim \mathcal{N}(0, E)$.
 
 ## Installation
 

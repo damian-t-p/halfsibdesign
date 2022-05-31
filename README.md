@@ -7,10 +7,11 @@
 <!-- badges: end -->
 
 A package containing several algorithms for finding REML estimates for
-covariances in the balanced *q*-dimenstional half-sib design
-*y*<sub>*i**j**k*</sub> = *μ* + *α*<sub>*i*</sub> + *β*<sub>*i**j*</sub> + *ϵ*<sub>*i**j**k*</sub>,  1 ≤ *i* ≤ *I*, 1 ≤ *j* ≤ *J*, 1 ≤ *k* ≤ *K*.
-where
-*α*<sub>*i*</sub> ∼ 𝒩(0,*A*),  *β*<sub>*i**j*</sub> ∼ 𝒩(0,*B*).  *ϵ*<sub>*i**j**k*</sub> ∼ 𝒩(0,*E*).
+covariances in the balanced *q*-dimensional half-sib design
+*y<sub>ijk</sub> = *μ* + *α*<sub>i</sub> + *β*<sub>ij</sub> +
+*ϵ*<sub>ijk</sub>*, *1 ≤ *i* ≤ *I*, 1 ≤ *j* ≤ *J*, 1 ≤ *k* ≤ *K**, where
+**α*<sub>i</sub>*  ∼ 𝒩(0,*A*), **β*<sub>ij</sub>*  ∼ 𝒩(0,*B*),
+**ϵ*<sub>ijk</sub>*  ∼ 𝒩(0,*E*).
 
 ## Installation
 
