@@ -59,8 +59,8 @@ stepreml_1way <- function(A1, n1, A2, n2) {
 }
 
 #' @rdname stepreml
-#' @param M1,M2,M3 Sum-of-squares matrices within sire, dam and individual groups.
-#' @param I1,I2,I3 Number of sires, dams per sire and individuals per dam.
+#' @param M1,M2,M3 Sum-of-squares matrices within individual, dam and sire groups.
+#' @param I1,I2,I3 Number of individuals per dam, dams per sire and sires.
 #' @param max_iter Number of iterations allowed before termination.
 #' @param err.tol Algorithm terminates when the differences between subsequent
 #' matrices in the matric described in \[1\] fall below this threshold.
