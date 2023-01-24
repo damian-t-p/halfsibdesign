@@ -21,9 +21,9 @@ stepreml_2way_mat(
 stepreml_2way_df(df, ...)
 }
 \arguments{
-\item{M1, M2, M3}{Sum-of-squares matrices within sire, dam and individual groups.}
+\item{M1, M2, M3}{Sum-of-squares matrices within individual, dam and sire groups.}
 
-\item{I1, I2, I3}{Number of sires, dams per sire and individuals per dam.}
+\item{I1, I2, I3}{Number of individuals per dam, dams per sire and sires.}
 
 \item{max_iter}{Number of iterations allowed before termination.}
 
