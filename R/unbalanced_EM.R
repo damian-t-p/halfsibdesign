@@ -5,7 +5,7 @@ EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init) {
 }
 
 n_observed <- function(y_data) {
-  sapply(y_data, nrow)
+  sapply(y_data$tables, nrow)
 }
 
 #' Compute (A^(-1) + n E^(-1))^(-1) for a vector of ns
@@ -60,17 +60,17 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns) {
 #' @export
 alpha_cond_params <- function(y_data, Sigma_E, Sigma_A) {
   observed_n   <- unique(n_observed(y_data))
-  covariances <- paired_inverse(Sigma_E, Sigma_A, observed_n)
+  covariances  <- paired_inverse(Sigma_E, Sigma_A, observed_n)
   
   params <- list()
 
-  for(i in 1:length(y_data)) {
+  for(i in 1:length(y_data$tables)) {
 
-    n   <- nrow(y_data[[i]])
+    n   <- nrow(y_data$tables[[i]])
     cov <- covariances[[paste(n)]]
 
     params[[i]] <- list(
-      mean = cov %*% solve(Sigma_E, colSums(y_data[[i]])),
+      mean = cov %*% solve(Sigma_E, colSums(y_data$tables[[i]])),
       cov  = cov
     )
   }

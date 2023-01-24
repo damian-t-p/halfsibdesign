@@ -45,7 +45,10 @@ new_fullsibdata <- function(y_tables) {
 
   structure(
     list(
-      tables = y_tables
+      tables   = y_tables,
+      n_sires  = length(y_tables),
+      n_ind    = max(sapply(y_tables, nrow)),
+      n_traits = ncol(y_tables[[1]])
     ),
     class = "fullsibdata"
   )
@@ -53,3 +56,11 @@ new_fullsibdata <- function(y_tables) {
 
 #' @export
 is.propensitymodel <- function(x) inherits(x, "propensitymodel")
+
+#' Check if a full-sib design in balanced
+#' 
+#' @export
+is.balanced <- function(y_data) {
+  min_inds <- min(sapply(y_data$tables, nrow))
+  min_inds == y_data$n_ind
+}

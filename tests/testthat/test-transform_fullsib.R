@@ -1,4 +1,4 @@
-test_that("Data frames are parsed properly as fullsibdata objects", {
+test_that("Conditional means of balanced data", {
   set.seed(123)
 
   df <- tibble::tribble(
@@ -21,9 +21,17 @@ test_that("Data frames are parsed properly as fullsibdata objects", {
     value_name = value
   )
 
-  expect_s3_class(y_data, "fullsibdata")
-  expect_equal(sapply(y_data$tables, nrow),
-               c(2, 1))
-  expect_equal(c(y_data$tables[[2]]),
-               c(df$value[c(6, 5)]))
+  params <- list(
+    list(mean = c(0, 0)),
+    list(mean = c(0, 0))
+  )
+
+  balanced_data <- balance_data(y_data, params)
+
+  expect_s3_class(balanced_data, "fullsibdata")
+  expect_equal(
+    dim(balanced_data$tables[[1]]),
+    dim(balanced_data$tables[[2]])
+  )
+  expect_true(is.balanced(balanced_data))
 })
