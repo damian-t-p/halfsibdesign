@@ -35,6 +35,9 @@ balance_data <- function(y_data, params) {
 #'
 #' @export
 ss_oneway <- function(y_data) {
+
+  stopifnot(is.balanced(y_data))
+
   centered_tables <- lapply(
     y_data$tables,
     \(X) scale(X, center = TRUE, scale = FALSE)
@@ -60,6 +63,6 @@ ss_oneway <- function(y_data) {
 
   list(
     A_E = ind_ss,
-    A_A = sire_ss
+    A_A = y_data$n_ind * sire_ss
   )
 }

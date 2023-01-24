@@ -1,7 +1,57 @@
 # y_data should be a list indexed by i, whose elements are O_i * p
 # matrices, where each row is an observation y_ij
 
-EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init) {
+EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init,
+                      max_iter = 1000,
+                      err.tol  = 1e-6) {
+
+  ## Sigma_E <- Sigma_E_init
+  ## Sigma_A <- Sigma_A_init
+
+  prev_covs <- list(Sigma_E_init, Sigma_A_init)
+  
+  for(iter in 1:max_iter) {
+
+    Sigma_E <- prev_covs[[1]]
+    Sigma_A <- prev_covs[[2]]
+
+    # M step
+    cond_params   <- alpha_cond_params(y_data, Sigma_E, Sigma_A)
+    balanced_data <- balance_data(y_data, cond_params)
+    ss_mats_base  <- ss_oneway(balanced_data)
+
+    J         <- y_data$n_ind
+    I         <- y_data$n_sires
+    n_missing <- sapply(y_data$tables, \(X) {J - nrow(X)})
+
+    # compute sum-of-squares matrices
+    A_E <- ss_mats_base$A_E + sum(n_missing) * (1 - 1/J) * Sigma_E
+    A_A <- ss_mats_base$A_A + sum(n_missing) * (1 - 1/I)/J * Sigma_E
+
+    for(i in 1:length(y_data$tables)) {
+      A_E <- A_E + n_missing[i] * (1 - n_missing[i]/J) * cond_params[[i]]$cov
+      A_A <- A_A + n_missing[i]^2 * (1 - 1/I)/J * cond_params[[i]]$cov
+    }
+
+    # E_step
+    curr_covs <- stepreml_1way(A_E, I*(J-1), A_A, I - 1)$primal
+
+    # check for convergence
+    if(iter > 1) {
+      err <- mat_err(prev_covs, curr_covs, list(I*(J-1), I-1))
+      if(err < err.tol) {break}
+    } else {
+      err <- NA
+    }
+
+    prev_covs <- curr_covs
+  }
+
+  list(
+    Sigma_E = curr_covs[[1]],
+    Sigma_A = curr_covs[[2]]
+  )
+  
 }
 
 n_observed <- function(y_data) {
