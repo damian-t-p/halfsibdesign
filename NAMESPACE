@@ -3,6 +3,7 @@
 S3method(fullsibdata,data.frame)
 S3method(fullsibdata,list)
 export("%>%")
+export(EM_oneway)
 export(alpha_cond_params)
 export(balance_data)
 export(fullsibdata)

@@ -1,19 +1,16 @@
 # y_data should be a list indexed by i, whose elements are O_i * p
 # matrices, where each row is an observation y_ij
 
+#'
+#' @export
 EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init,
                       max_iter = 1000,
                       err.tol  = 1e-6) {
 
-  ## Sigma_E <- Sigma_E_init
-  ## Sigma_A <- Sigma_A_init
-
-  prev_covs <- list(Sigma_E_init, Sigma_A_init)
+  Sigma_E <- Sigma_E_init
+  Sigma_A <- Sigma_A_init
   
   for(iter in 1:max_iter) {
-
-    Sigma_E <- prev_covs[[1]]
-    Sigma_A <- prev_covs[[2]]
 
     # M step
     cond_params   <- alpha_cond_params(y_data, Sigma_E, Sigma_A)
@@ -34,22 +31,22 @@ EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init,
     }
 
     # E_step
-    curr_covs <- stepreml_1way(A_E, I*(J-1), A_A, I - 1)$primal
+    curr_primal <- stepreml_1way(A_E, I*(J-1), A_A, I - 1)$primal
 
     # check for convergence
     if(iter > 1) {
-      err <- mat_err(prev_covs, curr_covs, list(I*(J-1), I-1))
+      err <- mat_err(prev_primal, curr_primal, list(I*(J-1), I-1))
       if(err < err.tol) {break}
     } else {
       err <- NA
     }
 
-    prev_covs <- curr_covs
+    prev_primal <- curr_primal
   }
 
   list(
-    Sigma_E = curr_covs[[1]],
-    Sigma_A = curr_covs[[2]]
+    Sigma_E = curr_primal[[1]],
+    Sigma_A = (curr_primal[[2]] - curr_primal[[1]])/J
   )
   
 }

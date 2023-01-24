@@ -63,6 +63,6 @@ ss_oneway <- function(y_data) {
 
   list(
     A_E = ind_ss,
-    A_A = y_data$n_ind * sire_ss
+    A_A = sire_ss
   )
 }
