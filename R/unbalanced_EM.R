@@ -32,6 +32,9 @@ EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init,
 
     # E_step
     curr_primal <- stepreml_1way(A_E, I*(J-1), A_A, I - 1)$primal
+    
+    Sigma_E = curr_primal[[1]]
+    Sigma_A = (curr_primal[[2]] - curr_primal[[1]])/J
 
     # check for convergence
     if(iter > 1) {
@@ -64,8 +67,8 @@ n_observed <- function(y_data) {
 #'
 #' @export
 paired_inverse <- function(Sigma_E, Sigma_A, ns) {
-  U <- chol(Sigma_E)
-  W <- U %*% solve(Sigma_A, t(U))
+  U <- Re(expm::sqrtm(Sigma_A))
+  W <- U %*% solve(Sigma_E, t(U))
 
   W_eigen <- eigen(W, symmetric = TRUE)
 
@@ -73,11 +76,27 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns) {
 
   inv_mats <- list()
   for(n in ns) {
-    inv_mats[[paste(n)]] <- UtP %*% diag(1/(W_eigen$values + n)) %*% t(UtP)
+    inv_mats[[paste(n)]] <- UtP %*% diag(1/(W_eigen$values * n + 1)) %*% t(UtP)
   }
 
   return(inv_mats)
 }
+
+## paired_inverse <- function(Sigma_E, Sigma_A, ns) {
+##   U <- chol(Sigma_E)
+##   W <- U %*% solve(Sigma_A, t(U))
+
+##   W_eigen <- eigen(W, symmetric = TRUE)
+
+##   UtP <- t(U) %*% W_eigen$vectors
+
+##   inv_mats <- list()
+##   for(n in ns) {
+##     inv_mats[[paste(n)]] <- UtP %*% diag(1/(W_eigen$values + n)) %*% t(UtP)
+##   }
+
+##   return(inv_mats)
+## }
 
 #' Compute conditional distribution of sires effect
 #'
