@@ -31,6 +31,22 @@ balance_data <- function(y_data, params) {
   
 }
 
+#' Balance the data by filling missing values with unconditional means
+#'
+#' This function is intended to provide initialisation values to the
+#' EM algorithm
+#'
+#' @export
+naive_balance <- function(y_data) {
+  
+  naive_means <- lapply(
+    y_data$tables,
+    \(X) list(mean = colMeans(X))
+  )
+
+  balance_data(y_data, naive_means)
+}
+
 #' Compute sum-of-squares matrices
 #'
 #' @export
