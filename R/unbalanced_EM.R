@@ -3,20 +3,36 @@
 
 #'
 #' @export
-EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init,
+EM_oneway <- function(y_data,
+                      Sigma_E_init, Sigma_A_init,
+                      method   = c("REML", "ML"),
                       max_iter = 1000,
                       err.tol  = 1e-6) {
 
+  method = match.arg(method)
+  
   Sigma_E <- Sigma_E_init
   Sigma_A <- Sigma_A_init
+
+  if(method == "ML") {
+    mu <- rowMeans(sapply(y_data$tables, colMeans))
+  } else {
+    mu <- rep(0, nrow(Sigma_E_init))
+  }
   
   for(iter in 1:max_iter) {
 
     # M step
-    cond_params   <- alpha_cond_params(y_data, Sigma_E, Sigma_A)
+    cond_params   <- alpha_cond_params(y_data, Sigma_E, Sigma_A, mu)
     balanced_data <- balance_data(y_data, cond_params)
     ss_mats_base  <- ss_oneway(balanced_data)
 
+    if(method == "ML") {
+      mu <- rowMeans(sapply(balanced_data$tables, colMeans))
+    } else {
+      mu <- rep(0, nrow(Sigma_E_init))
+    }
+    
     J         <- y_data$n_ind
     I         <- y_data$n_sires
     n_missing <- sapply(y_data$tables, \(X) {J - nrow(X)})
@@ -31,7 +47,9 @@ EM_oneway <- function(y_data, Sigma_E_init, Sigma_A_init,
     }
 
     # E_step
-    curr_primal <- stepreml_1way(A_E, I*(J-1), A_A, I - 1)$primal
+    degf_E <- I * (J - 1)
+    degf_A <- I - (method == "REML")
+    curr_primal <- stepreml_1way(A_E, degf_E, A_A, degf_A)$primal
     
     Sigma_E = curr_primal[[1]]
     Sigma_A = (curr_primal[[2]] - curr_primal[[1]])/J
@@ -118,13 +136,14 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns) {
 #' @param y_data Observed data that inherits "`fullsibdata`"
 #' @param Sigma_E Between-individuals covariance matrix
 #' @param Sigma_A Between-sires covariance matrix
+#' @param mu Global mean
 #'
 #' @return A list of multivariate Gaussian parameters for the conditional
 #' distribution of the sires random effect. Each entry is a list with entries
 #' `mean` and `cov`, which are the mean vector and covariance matrix respectively.
 #'
 #' @export
-alpha_cond_params <- function(y_data, Sigma_E, Sigma_A) {
+alpha_cond_params <- function(y_data, Sigma_E, Sigma_A, mu = rep(0, nrow(Sigma_E))) {
   observed_n   <- unique(n_observed(y_data))
   covariances  <- paired_inverse(Sigma_E, Sigma_A, observed_n)
   
@@ -136,7 +155,7 @@ alpha_cond_params <- function(y_data, Sigma_E, Sigma_A) {
     cov <- covariances[[paste(n)]]
 
     params[[i]] <- list(
-      mean = cov %*% solve(Sigma_E, colSums(y_data$tables[[i]])),
+      mean = mu + cov %*% solve(Sigma_E, colSums(y_data$tables[[i]]) - n * mu),
       cov  = cov
     )
   }

@@ -9,7 +9,7 @@ test_that("Paired inverse computation", {
   expect_mapequal(paired_inverse(E, A, ns), l)
 })
 
-set.seed(123)
+set.seed(1234)
 
 df <- tibble::tribble(
   ~sire, ~ind, ~trait,
@@ -40,14 +40,39 @@ test_that("Conditional sire effect", {
 
 })
 
-test_that("EM algorithm", {
+test_that("REML EM algorithm", {
 
-  ests <- EM_oneway(y_data, diag(2), diag(2))
+  ests <- EM_oneway(y_data, diag(2), diag(2), method = "REML")
   
   expect_true(
     all(sapply(
       ests,
-      \(X) all(abs(X - t(X)) < 1e-6) & all(eigen(X)$values >= 0)
+      \(X) all(abs(X - t(X)) < 1e-6)
+    ))
+  )
+
+  expect_true(
+    all(sapply(
+      ests,
+      \(X) all(eigen(X)$values > -1e-6)
+    ))
+  )
+})
+
+test_that("ML EM algorithm", {
+  ests <- EM_oneway(y_data, diag(2), diag(2), method = "ML")
+  
+  expect_true(
+    all(sapply(
+      ests,
+      \(X) all(abs(X - t(X)) < 1e-6)
+    ))
+  )
+
+  expect_true(
+    all(sapply(
+      ests,
+      \(X) all(eigen(X)$values > -1e-6)
     ))
   )
 

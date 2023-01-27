@@ -4,7 +4,7 @@
 \alias{alpha_cond_params}
 \title{Compute conditional distribution of sires effect}
 \usage{
-alpha_cond_params(y_data, Sigma_E, Sigma_A)
+alpha_cond_params(y_data, Sigma_E, Sigma_A, mu = rep(0, nrow(Sigma_E)))
 }
 \arguments{
 \item{y_data}{Observed data that inherits "\code{fullsibdata}"}
@@ -12,6 +12,8 @@ alpha_cond_params(y_data, Sigma_E, Sigma_A)
 \item{Sigma_E}{Between-individuals covariance matrix}
 
 \item{Sigma_A}{Between-sires covariance matrix}
+
+\item{mu}{Global mean}
 }
 \value{
 A list of multivariate Gaussian parameters for the conditional
