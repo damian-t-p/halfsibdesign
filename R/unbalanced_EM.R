@@ -88,6 +88,18 @@ svdsqrt <- function(A) {
   return(t(V) * sqrt(abs(d)))
 }
 
+#' Use eigen to compute a square root of the non-negative definite symmetric matrix A
+eigensqrt <- function(A) {
+  decomp <- eigen(A, symmetric = TRUE)
+
+  V <- decomp$vectors
+  d <- decomp$values
+
+  stopifnot(all(d > -1e-6))
+  
+  return(t(V) * sqrt(abs(d)))
+}
+
 #' Compute (A^(-1) + n E^(-1))^(-1) for a vector of ns
 #'
 #' @param A,E Symmetric nonnegative-definite square matrices
@@ -97,8 +109,7 @@ svdsqrt <- function(A) {
 #'
 #' @export
 paired_inverse <- function(Sigma_E, Sigma_A, ns) {
-  ## U <- Re(expm::sqrtm(Sigma_A))
-  U <- svdsqrt(Sigma_A)
+  U <- eigensqrt(Sigma_A)
   W <- U %*% solve(Sigma_E, t(U))
 
   W_eigen <- eigen(W, symmetric = TRUE)
@@ -112,22 +123,6 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns) {
 
   return(inv_mats)
 }
-
-## paired_inverse <- function(Sigma_E, Sigma_A, ns) {
-##   U <- chol(Sigma_E)
-##   W <- U %*% solve(Sigma_A, t(U))
-
-##   W_eigen <- eigen(W, symmetric = TRUE)
-
-##   UtP <- t(U) %*% W_eigen$vectors
-
-##   inv_mats <- list()
-##   for(n in ns) {
-##     inv_mats[[paste(n)]] <- UtP %*% diag(1/(W_eigen$values + n)) %*% t(UtP)
-##   }
-
-##   return(inv_mats)
-## }
 
 #' Compute conditional distribution of sires effect
 #'
