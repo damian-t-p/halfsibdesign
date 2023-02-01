@@ -12,6 +12,7 @@ RoxygenNote: 7.2.2
 Imports: 
     dplyr,
     expm,
+    fastmatrix,
     lme4,
     magrittr,
     MASS,

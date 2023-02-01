@@ -76,6 +76,18 @@ n_observed <- function(y_data) {
   sapply(y_data$tables, nrow)
 }
 
+#' Use svd to compute a square root of the non-negative definite symmetric matrix A
+svdsqrt <- function(A) {
+  decomp <- svd(A, nu=0)
+
+  V <- decomp$v
+  d <- decomp$d
+
+  stopifnot(all(d > -1e-6))
+  
+  return(t(V) * sqrt(abs(d)))
+}
+
 #' Compute (A^(-1) + n E^(-1))^(-1) for a vector of ns
 #'
 #' @param A,E Symmetric nonnegative-definite square matrices
@@ -85,7 +97,8 @@ n_observed <- function(y_data) {
 #'
 #' @export
 paired_inverse <- function(Sigma_E, Sigma_A, ns) {
-  U <- Re(expm::sqrtm(Sigma_A))
+  ## U <- Re(expm::sqrtm(Sigma_A))
+  U <- svdsqrt(Sigma_A)
   W <- U %*% solve(Sigma_E, t(U))
 
   W_eigen <- eigen(W, symmetric = TRUE)
