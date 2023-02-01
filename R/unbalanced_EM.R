@@ -56,7 +56,7 @@ EM_oneway <- function(y_data,
 
     # check for convergence
     if(iter > 1) {
-      err <- mat_err(prev_primal, curr_primal, list(I*(J-1), I-1))
+      err <- mat_err(prev_primal, curr_primal, list(degf_E, degf_A))
       if(err < err.tol) {break}
     } else {
       err <- NA
@@ -89,6 +89,8 @@ svdsqrt <- function(A) {
 }
 
 #' Use eigen to compute a square root of the non-negative definite symmetric matrix A
+#'
+#' The resulting U satisfies t(U) %*% U == A
 eigensqrt <- function(A) {
   decomp <- eigen(A, symmetric = TRUE)
 
@@ -108,9 +110,17 @@ eigensqrt <- function(A) {
 #' @return A list of inverted matrices indexed by the vector `ns`
 #'
 #' @export
-paired_inverse <- function(Sigma_E, Sigma_A, ns) {
+paired_inverse <- function(Sigma_E, Sigma_A, ns, E_type = c("cov", "prec")) {
+
+  E_type <- match.arg(E_type)
+  
   U <- eigensqrt(Sigma_A)
-  W <- U %*% solve(Sigma_E, t(U))
+
+  if(E_type == "cov") {
+    W <- U %*% solve(Sigma_E, t(U))
+  } else {
+    W <- U %*% Sigma_E %*% t(U)
+  }
 
   W_eigen <- eigen(W, symmetric = TRUE)
 
@@ -152,8 +162,10 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns) {
 #'
 #' @export
 alpha_cond_params <- function(y_data, Sigma_E, Sigma_A, mu = rep(0, nrow(Sigma_E))) {
+  precision_E <- solve(Sigma_E)
+  
   observed_n   <- unique(n_observed(y_data))
-  covariances  <- paired_inverse(Sigma_E, Sigma_A, observed_n)
+  covariances  <- paired_inverse(precision_E, Sigma_A, observed_n, E_type = "prec")
   
   params <- list()
 
@@ -163,7 +175,7 @@ alpha_cond_params <- function(y_data, Sigma_E, Sigma_A, mu = rep(0, nrow(Sigma_E
     cov <- covariances[[paste(n)]]
 
     params[[i]] <- list(
-      mean = mu + cov %*% solve(Sigma_E, colSums(y_data$tables[[i]]) - n * mu),
+      mean = mu + cov %*% (precision_E %*% (colSums(y_data$tables[[i]]) - n * mu)),
       cov  = cov
     )
   }
