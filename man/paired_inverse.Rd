@@ -9,6 +9,8 @@ paired_inverse(Sigma_E, Sigma_A, ns, E_type = c("cov", "prec"))
 \arguments{
 \item{ns}{A vector of doubles}
 
+\item{E_type}{If this equals \code{"prec"}, the first argument is instead \code{E^(-1)}}
+
 \item{A, E}{Symmetric nonnegative-definite square matrices}
 }
 \value{

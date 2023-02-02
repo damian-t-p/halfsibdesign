@@ -7,5 +7,5 @@
 eigensqrt(A)
 }
 \description{
-The resulting U satisfies t(U) \%*\% U == A
+The resulting U satisfies \code{t(U) \%*\% U == A}
 }

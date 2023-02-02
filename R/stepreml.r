@@ -28,8 +28,13 @@ stepreml_1way <- function(A1, n1, A2, n2) {
   S2 <- A2/n2
 
   # S1 = U' U
-  U <- chol(S1)
-  U_inv <- solve(U)
+  decomp <- eigen(S1, symmetric = TRUE)
+  V <- decomp$vectors
+  d <- decomp$values
+
+  stopifnot(all(d > -1e-6))
+  U     <- t(V) * sqrt(abs(d))
+  U_inv <- t(t(V) * 1/sqrt(abs(d)))
 
   # inv(U') S2 inv(U) = Q D Q'
   eigs <- eigen(t(U_inv) %*% S2 %*% U_inv, symmetric = TRUE)
@@ -38,7 +43,6 @@ stepreml_1way <- function(A1, n1, A2, n2) {
 
   # B S1 B' = I
   # B S2 B' = D
-  B <- t(Q) %*% t(U_inv)
   B_inv <- t(U) %*% Q
 
   c_hat = 1 - n2/(n1 + n2) * pmax(1 - d, 0)
@@ -66,8 +70,18 @@ stepreml_1way <- function(A1, n1, A2, n2) {
 #' matrices in the matric described in \[1\] fall below this threshold.
 #' @param verbose If this is `TRUE`, the output will contain a field
 #' `conv_details` containing information about the algorithm's convergence.
+#' @param log_crit When should the REML criterion be computed. If `"output"`, it will
+#' be computed for the final fitted value. If `"always"`, will be computed at each
+#' iteration step.
+#' 
 #' @export
-stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6, verbose = FALSE) {
+stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3,
+                              max_iter = 50,
+                              err.tol  = 1e-6,
+                              verbose  = FALSE,
+                              log_crit = c("output", "never", "always")) {
+
+  log_crit <- match.arg(log_crit)
 
   n1 <- (I1-1)*I2*I3
   n2 <- (I2-1)*I3
@@ -91,8 +105,8 @@ stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6,
   dual_2_prev <- list(zero, zero, zero)
 
   conv_df <- tibble::tibble(
-    iter = integer(),
-    est_diff = numeric(),
+    iter       = integer(),
+    est_diff   = numeric(),
     reml_score = numeric()
   )
 
@@ -136,7 +150,6 @@ stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6,
     S1 <- primal_curr[[1]]
     S2 <- (primal_curr[[2]] - primal_curr[[1]])/I1
     S3 <- (primal_curr[[3]] - primal_curr[[2]])/(I1*I2)
-    reml_score <- reml_crit(M1, S1, I1, M2, S2, I2, M3, S3, I3)
 
     # check for convergence
     if(i > 1) {
@@ -146,11 +159,20 @@ stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6,
       err <- NA
     }
 
-    conv_df <- conv_df %>%
-      tibble::add_row(
-        iter = i,
-        est_diff = err,
-        reml_score = reml_score)
+    if(log_crit == "always") {
+      reml_score <- reml_crit(M1, S1, I1, M2, S2, I2, M3, S3, I3)
+    } else {
+      reml_score <- NA
+    }
+
+    if(verbose == TRUE) {
+      conv_df <- conv_df %>%
+        tibble::add_row(
+          iter       = i,
+          est_diff   = err,
+          reml_score = reml_score
+        )
+    }
 
     primal_prev <- primal_curr
   }
@@ -162,7 +184,9 @@ stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3, max_iter=50, err.tol=1e-6,
     S3 = (primal_curr[[3]] - primal_curr[[2]])/(I1*I2)
   )
 
-  out$reml_crit <- reml_crit(M1, out$S1, I1, M2, out$S2, I2, M3, out$S3, I3)
+  if(log_crit %in% c("always", "output")) {
+    out$reml_crit <- reml_crit(M1, out$S1, I1, M2, out$S2, I2, M3, out$S3, I3)
+  }
 
   if(verbose == TRUE) {
     out$conv_details <- conv_df

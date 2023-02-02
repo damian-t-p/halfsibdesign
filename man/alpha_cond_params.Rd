@@ -33,6 +33,6 @@ computes the parameters of the Gaussian conditional distribution
 \deqn{
 \alpha_i | y_i.
 }{
-alpha[i] | y_i.
+alpha[i] | y[i].
 }
 }

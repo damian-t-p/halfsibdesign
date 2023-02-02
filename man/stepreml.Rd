@@ -15,7 +15,8 @@ stepreml_2way_mat(
   I3,
   max_iter = 50,
   err.tol = 1e-06,
-  verbose = FALSE
+  verbose = FALSE,
+  log_crit = c("output", "never", "always")
 )
 
 stepreml_2way_df(df, ...)
@@ -32,6 +33,10 @@ matrices in the matric described in [1] fall below this threshold.}
 
 \item{verbose}{If this is \code{TRUE}, the output will contain a field
 \code{conv_details} containing information about the algorithm's convergence.}
+
+\item{log_crit}{When should the REML criterion be computed. If \code{"output"}, it will
+be computed for the final fitted value. If \code{"always"}, will be computed at each
+iteration step.}
 
 \item{df}{Data frame for 2-way design}
 

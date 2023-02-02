@@ -90,7 +90,7 @@ svdsqrt <- function(A) {
 
 #' Use eigen to compute a square root of the non-negative definite symmetric matrix A
 #'
-#' The resulting U satisfies t(U) %*% U == A
+#' The resulting U satisfies `t(U) %*% U == A`
 eigensqrt <- function(A) {
   decomp <- eigen(A, symmetric = TRUE)
 
@@ -106,6 +106,7 @@ eigensqrt <- function(A) {
 #'
 #' @param A,E Symmetric nonnegative-definite square matrices
 #' @param ns A vector of doubles
+#' @param E_type If this equals `"prec"`, the first argument is instead `E^(-1)`
 #'
 #' @return A list of inverted matrices indexed by the vector `ns`
 #'
@@ -148,7 +149,7 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns, E_type = c("cov", "prec")) {
 #' \deqn{
 #' \alpha_i | y_i.
 #' }{
-#' alpha[i] | y_i.
+#' alpha[i] | y[i].
 #' }
 #'
 #' @param y_data Observed data that inherits "`fullsibdata`"
