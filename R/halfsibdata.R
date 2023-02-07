@@ -59,6 +59,13 @@ validate_halfsibdata <- function(values, sires, dams) {
     sires,
     \(v) length(unique(v))
   )
+
+  if(length(unique(observed_dams)) != 1) {
+    stop(
+      "Must have the same number of dams for each sire",
+      call. = FALSE
+    )
+  }
   
   observed_inds <- tapply(
     1:n,
@@ -66,7 +73,7 @@ validate_halfsibdata <- function(values, sires, dams) {
     \(v) length(v)
   )
 
-  unique_dam_idx <- !duplicated(dams)
+  unique_dam_idx     <- !duplicated(dams)
   sire_of_dam        <- sires[unique_dam_idx]
   names(sire_of_dam) <- dams[unique_dam_idx]
   

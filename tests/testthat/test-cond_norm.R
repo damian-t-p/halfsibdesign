@@ -37,6 +37,6 @@ test_that("Sire means have correct dimensions", {
 })
 
 test_that("Dam means have correct dimensions", {
-  expect_equal(ncol(cmean$dams), q)
+  expect_equal(ncol(cmean$dam), q)
   expect_equal(rownames(cmean$dam), names(data$n.observed$inds))
 })
