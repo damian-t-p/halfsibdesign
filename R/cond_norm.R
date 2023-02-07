@@ -37,9 +37,9 @@ cond_cov <- function(init_covs, data) {
         if(m >= n) {
           main_blocks_l2[[paste(m)]] <- t(CD_inv[[paste(m)]] %*% W(ns) %*% CD_inv[[paste(n)]])
 
-          if(m == n) {
-            main_blocks_l2[[paste(n)]] <- main_blocks_l2[[paste(n)]] + D_inv[[paste(n)]]
-          }
+          ## if(m == n) {
+          ##   main_blocks_l2[[paste(n)]] <- main_blocks_l2[[paste(n)]] + D_inv[[paste(n)]]
+          ## }
         }
       }
 
@@ -51,40 +51,87 @@ cond_cov <- function(init_covs, data) {
     main_blocks[[toString(ns)]] <- main_blocks_l1
   }
 
-  list(
-    top = top_blocks,
-    main = main_blocks
-  )
-
   # CREATE THE CLOSURE
-  
+
   function(i, j, k) {
     ns <- dam_counts[[i]]
 
     ns_sort <- sort(ns)
     
-    if(j == 0) {
-      if(k == 0) {
+    if(j == "group") {
+      if(k == "group") {
         return(W(ns))
       } else {
         return(top_blocks[[toString(ns_sort)]][[paste(ns[k])]])
       }
-    } else if (k == 0) {
+    } else if (k == "group") {
       return(t(top_blocks[[toString(ns_sort)]][[paste(ns[j])]]))
     } else {
       n <- ns[j]
       m <- ns[k]
-
+      
       if(n <= m) {
-        return(main_blocks[[toString(ns_sort)]][[paste(n)]][[paste(m)]])
+        out_block <- main_blocks[[toString(ns_sort)]][[paste(n)]][[paste(m)]]
       } else {
-        return(t(main_blocks[[toString(ns_sort)]][[paste(m)]][[paste(n)]]))
+        out_block <- t(main_blocks[[toString(ns_sort)]][[paste(m)]][[paste(n)]])
       }
+
+      if(j == k) {
+        out_block <- out_block + D_inv[[paste(n)]]
+      }
+
+      return(out_block)
       
     }
 
   }
   
+}
+
+cond_mean <- function(cond_cov, data) {
+
+  sire_sums <- rowsum(data$dam_sums, data$sires)
+  
+  # List indexed by sires with vectors of dam names
+  dam_idxs <- split(names(data$sires), data$sires)
+
+  sire_means <- matrix(
+    nrow     = data$dims$I,
+    ncol     = data$dims$q,
+    dimnames = list(names(dam_idxs))
+  )
+  
+  dam_means <- matrix(
+    nrow     = nrow(data$dam_sums),
+    ncol     = data$dims$q,
+    dimnames = list(rownames(data$dam_sums))
+  )
+  
+  for(sire in names(dam_idxs)) {
+
+    dams <- dam_idxs[[sire]]
+
+    sire_means[sire, ] <- cond_cov(sire, "group", "group") %*% sire_sums[sire, ]
+
+    for(dam in dams) {
+      sire_means[sire, ] <- sire_means[sire, ] + cond_cov(sire, "group", dam) %*% data$dam_sums[dam, ]
+    }
+
+    for(dam in dams) {
+
+      dam_means[dam, ] <- cond_cov(sire, dam, "group") %*% sire_sums[sire, ]
+      
+      for(dam_mult in dams) {
+        dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, dam_mult) %*% data$dam_sums[dam_mult, ]
+      }
+    }
+    
+  }
+
+  list(
+    sire = sire_means,
+    dam  = dam_means
+  )
 }
 
 #' Compute (Sigma[A] + sum((Sigma[B] + Sigma[E]/n[j])^(-1)))^(-1) for
