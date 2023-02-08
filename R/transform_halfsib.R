@@ -20,7 +20,8 @@ balance.halfsibdata <- function(data, means, globmean = rep(0, data$dims$q)) {
   full_sums  <- data$dam_sums + unobs_sums
 
   # Add unobserved sum-of-squares
-  full_sos   <- data$sos + t(unobs_sums) %*% unobs_sums
+  unobs_sums_semi <- obs_means * sqrt(n_missing)
+  full_sos   <- data$sos + t(unobs_sums_semi) %*% unobs_sums_semi
 
   new_halfsibdata(
     sos      = full_sos,

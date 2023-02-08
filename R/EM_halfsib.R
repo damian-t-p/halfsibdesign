@@ -5,26 +5,31 @@ EM_fit.halfsibdata <- function(data,
                                max_iter = 1000,
                                err.tol  = 1e-6) {
 
-  method <- match.arg(method)
-
-  if(method == "ML") {
-    mu <- colMeans(data$dam_sums) / data$dims$K
-  } else {
-    mu <- rep(0, data$dims$q)
-  }
+  method <- match.arg(method)  
 
   I <- data$dims$I
   J <- data$dims$J
   K <- data$dims$K
   
   n_missing <- K - data$n.observed$inds
+
+  if(method == "ML") {
+      mu <- colMeans(data$dam_sums / data$n.observed$inds)
+    } else {
+      mu <- rep(0, data$dims$q)
+    }
   
   for(iter in 1:max_iter) {
+    
     ccov  <- cond_cov(prior_covs, data)
     cmean <- cond_mean(ccov, data, prior_mean = mu)
 
     balanced_data <- balance(data, cmean, globmean = mu)
 
+    if(method == "ML") {
+      mu <- colMeans(balanced_data$dam_sums) / data$dims$K
+    }
+    
     # Naive sum-of-squares M-matrices
     ss_base <- ss_mats.halfsibdata(balanced_data)
 
@@ -53,7 +58,7 @@ EM_fit.halfsibdata <- function(data,
         for(dam2 in dam_names[[sire]]) {
           M_B <- M_B -
             n_missing[[dam]] * n_missing[[dam2]] * ccomp(sire, dam, dam2) *
-            1/(J * K) * 1/(J-1)
+            1/(J * K) * 1/(I * (J-1))
 
           M_A <- M_A +
             n_missing[[dam]] * n_missing[[dam2]] * ccomp(sire, dam, dam2) *
@@ -62,7 +67,7 @@ EM_fit.halfsibdata <- function(data,
       }
 
       # E step
-      curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I + (method == "ML"), log_crit = "never")
+      curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I, log_crit = "never")
 
       prior_covs <- list(
         ind = curr_primal$S1,
@@ -71,7 +76,7 @@ EM_fit.halfsibdata <- function(data,
       )
       
       if(iter > 1) {
-        err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * J, I - (method == "REML")))
+        err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * J, I))
         if(err < err.tol) {break}
       } else {
         err <- NA
