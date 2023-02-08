@@ -8,7 +8,7 @@ ss_mats.halfsibdata <- function(data) {
 
   I <- data$dims$I
   J <- data$dims$J
-  K <- data$dims$J
+  K <- data$dims$K
   
   dam_means  <- data$dam_sums / K
   sire_means <- rowsum(dam_means, data$sires) / J

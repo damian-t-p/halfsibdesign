@@ -80,7 +80,7 @@ validate_halfsibdata <- function(values, sires, dams) {
   new_halfsibdata(
     sos      = t(values) %*% values,
     dam_sums = rowsum(values, group = dams),
-    sires    = sire_of_dam,
+    sires    = sire_of_dam[names(observed_inds)],
     I        = length(unique(sires)),
     J        = max(observed_dams),
     K        = max(observed_inds),

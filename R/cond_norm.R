@@ -28,7 +28,7 @@ cond_cov <- function(init_covs, data) {
   Sigma_A <- init_covs$sire
 
   # List of numbers of individuals observes per dam indexed by sire
-  dam_counts  <- split(data$n.observed$inds, data$sires)
+  dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
 
   # All observation count vectors that are distince up to reordering
   unique_count_vecs <- dam_counts %>%
@@ -228,7 +228,7 @@ make_W <- function(init_covs, data) {
   Sigma_A <- init_covs$sire
   
   # Get the unique (up to re-ordering) values of (|O_i|)_i present in the data
-  ob_counts <- split(data$n.observed$inds, data$sires)
+  ob_counts <- split(data$n.observed$inds[names(data$sires)], data$sires)
 
   unique_count_vecs <- ob_counts %>%
     lapply(\(v) unname(sort(v))) %>%

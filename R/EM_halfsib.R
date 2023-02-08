@@ -17,13 +17,13 @@ EM_fit.halfsibdata <- function(data,
   J <- data$dims$J
   K <- data$dims$K
   
-  n_missing <- J - data$n.observed$inds
+  n_missing <- K - data$n.observed$inds
   
   for(iter in 1:max_iter) {
     ccov  <- cond_cov(prior_covs, data)
-    cmean <- cond_mean(ccov, data)
+    cmean <- cond_mean(ccov, data, prior_mean = mu)
 
-    balanced_data <- balance(data, cmean)
+    balanced_data <- balance(data, cmean, globmean = mu)
 
     # Naive sum-of-squares M-matrices
     ss_base <- ss_mats.halfsibdata(balanced_data)

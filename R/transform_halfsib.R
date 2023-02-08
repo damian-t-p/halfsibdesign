@@ -14,7 +14,7 @@ balance.halfsibdata <- function(data, means, globmean = rep(0, data$dims$q)) {
   obs_means  <- means$dam + means$sire[data$sires, ] + rep(globmean, each = nrow(means$dam))
 
   # Create a matrix of unobserved sums
-  n_missing  <- data$dims$J - data$n.observed$inds[rownames(obs_means)]
+  n_missing  <- data$dims$K - data$n.observed$inds[rownames(obs_means)]
   unobs_sums <- obs_means * n_missing
 
   full_sums  <- data$dam_sums + unobs_sums
