@@ -16,7 +16,7 @@ prior_covs <- list(
 )
 
 ccov <- cond_cov(prior_covs, data)
-cmean <- cond_mean(ccov, data)
+cmean <- cond_mean(prior_covs, data)
 
 balanced_data <- balance(data, cmean)
 

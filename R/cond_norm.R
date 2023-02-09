@@ -161,8 +161,12 @@ cond_cov <- function(init_covs, data) {
 #' means of `alpha[i]` and `beta[ij]` respectively.
 #' 
 #' @export
-cond_mean <- function(cond_cov, data, prior_mean = rep(0, data$dims$q)) {
+cond_mean <- function(init_covs, data, prior_mean = rep(0, data$dims$q)) {
 
+  Sigma_E <- init_covs$ind
+  Sigma_B <- init_covs$dam
+  Sigma_A <- init_covs$sire
+  
   # centre dam sums by prior mean
   dam_sums  <- data$dam_sums - data$n.observed$inds %o% prior_mean
 
@@ -184,29 +188,32 @@ cond_mean <- function(cond_cov, data, prior_mean = rep(0, data$dims$q)) {
     dimnames = list(rownames(data$dam_sums))
   )
 
-  # For each sire, perform the matrix multiplication
-  #
-  # Sigma[i] %*% (sire_sums[i]; dam_sums[i1]; ...; dam_sums[iJ])
-  # 
-  # This is likely not the fastest way to do this computation
+  Omega_E <- solve(Sigma_E)
+  
+  obs_per_dam <- unique(data$n.observed$inds)
+  obs_per_sire <- unique(sapply(split(data$n.observed$inds, data$sires), sum))
+
+  sire_prec_block <- paired_inverse(Omega_E, Sigma_A, obs_per_sire, E_type = "prec")
+  dam_prec_block <- paired_inverse(Omega_E, Sigma_B, obs_per_dam, E_type = "prec")
+  
   for(sire in names(dam_idxs)) {
+    
+    ns <- data$n.observed$inds[dam_idxs[[sire]]]
+    n  <- sum(ns)
+
+    sire_means[sire, ] <- sire_prec_block[[paste(n)]] %*% (Omega_E %*% sire_sums[sire, ])
+
 
     # Indices of dams whose sire is `sire`
     dams <- dam_idxs[[sire]]
-
-    sire_means[sire, ] <- cond_cov(sire, "group", "group") %*% sire_sums[sire, ]
-
-    for(dam in dams) {
-      sire_means[sire, ] <- sire_means[sire, ] + cond_cov(sire, "group", dam) %*% dam_sums[dam, ]
-    }
-
+    
     for(dam in dams) {
 
-      dam_means[dam, ] <- cond_cov(sire, dam, "group") %*% sire_sums[sire, ]
-      
-      for(dam_mult in dams) {
-        dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, dam_mult) %*% dam_sums[dam_mult, ]
-      }
+      nj <- data$n.observed$inds[dam]
+
+      dam_means[dam, ] <- dam_prec_block[[paste(nj)]] %*%
+        (Omega_E %*% (dam_sums[dam, ] - nj * sire_means[sire, ]))
+        
     }
     
   }
@@ -226,6 +233,8 @@ make_W <- function(init_covs, data) {
   Sigma_E <- init_covs$ind
   Sigma_B <- init_covs$dam
   Sigma_A <- init_covs$sire
+
+  q <- data$dims$q
   
   # Get the unique (up to re-ordering) values of (|O_i|)_i present in the data
   ob_counts <- split(data$n.observed$inds[names(data$sires)], data$sires)
@@ -251,21 +260,22 @@ make_W <- function(init_covs, data) {
   d    <- eigs$values
   Q    <- eigs$vectors
 
-  U_invQ_inv <- t(Q) %*% U
-
+  ## U_invQ_inv <- t(Q) %*% U
+  U_invQ <- U_inv %*% Q
   
   D <- list()
   for(n in unique_counts) {
     D[[paste(n)]] <- diag(1 / (d + 1/n))
   }
 
-  A <- U_invQ_inv %*% solve(Sigma_A, t(U_invQ_inv))
+  ## A <- U_invQ_inv %*% solve(Sigma_A, t(U_invQ_inv))
 
   W_list <- list()
   for(n_vec in unique_count_vecs) {
     D_curr <- Reduce(`+`, D[paste(n_vec)])
 
-    W_list[[toString(n_vec)]] <- t(U_invQ_inv) %*% solve(A + D_curr, U_invQ_inv)
+    ## W_list[[toString(n_vec)]] <- t(U_invQ_inv) %*% solve(A + D_curr, U_invQ_inv)
+    W_list[[toString(n_vec)]] <- solve(diag(q) + Sigma_A %*% U_invQ %*% D_curr %*% t(U_invQ), Sigma_A)
   }
 
   function(n_vec) {

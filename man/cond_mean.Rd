@@ -4,15 +4,15 @@
 \alias{cond_mean}
 \title{Compute the conditional mean of two-way MANOVA random effects}
 \usage{
-cond_mean(cond_cov, data, prior_mean = rep(0, data$dims$q))
+cond_mean(init_covs, data, prior_mean = rep(0, data$dims$q))
 }
 \arguments{
-\item{cond_cov}{A function that returns conditional covariance matrices as
-created by \code{halfsibdesign::cond_cov}}
-
 \item{data}{An object inheriting \code{halfsibdata}}
 
 \item{prior_mean}{A vector of the prior global mean}
+
+\item{cond_cov}{A function that returns conditional covariance matrices as
+created by \code{halfsibdesign::cond_cov}}
 }
 \value{
 A list with entries \code{sire} and \code{dam} whose rows are the posterior
