@@ -18,9 +18,9 @@ prior_covs <- list(
 ccov <- cond_cov(prior_covs, data)
 
 test_that("Covariance matrices are symmetric", {
-  expect_equal(ccov("X1", "X1", "X2"), ccov("X1", "X2", "X1"))
-  expect_equal(ccov("X2", "X3", "X4"), ccov("X2", "X3", "X4"))
-  expect_equal(ccov("X3", "X5", "X6"), ccov("X3", "X6", "X5"))
+  expect_equal(ccov("X1", "X1", "X2"), t(ccov("X1", "X2", "X1")))
+  expect_equal(ccov("X2", "X3", "X4"), t(ccov("X2", "X4", "X3")))
+  expect_equal(ccov("X3", "X5", "X6"), t(ccov("X3", "X6", "X5")))
 })
 
 test_that("Covariance matrices work correctly for dams with equal observation numbers", {
@@ -30,6 +30,7 @@ test_that("Covariance matrices work correctly for dams with equal observation nu
 })
 
 cmean <- cond_mean(prior_covs, data)
+cmean_new <- cond_mean_new(prior_covs, ccov, data)
 
 test_that("Sire means have correct dimensions", {
   expect_equal(ncol(cmean$sire), q)

@@ -79,13 +79,15 @@ stepreml_2way_mat <- function(M1, I1, M2, I2, M3, I3,
                               max_iter = 50,
                               err.tol  = 1e-6,
                               verbose  = FALSE,
-                              log_crit = c("output", "never", "always")) {
+                              log_crit = c("output", "never", "always"),
+                              method   = c("REML", "ML")) {
 
   log_crit <- match.arg(log_crit)
+  method   <- match.arg(method)
 
   n1 <- (I1-1)*I2*I3
   n2 <- (I2-1)*I3
-  n3 <- I3-1
+  n3 <- I3 - (method == "REML")
 
   A1 <- M1 * n1
   A2 <- M2 * n2

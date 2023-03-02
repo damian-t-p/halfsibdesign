@@ -14,11 +14,13 @@ EM_oneway <- function(y_data,
   Sigma_E <- Sigma_E_init
   Sigma_A <- Sigma_A_init
 
-  if(method == "ML") {
-    mu <- rowMeans(sapply(y_data$tables, colMeans))
-  } else {
-    mu <- rep(0, nrow(Sigma_E_init))
-  }
+  mu <- rowMeans(sapply(y_data$tables, colMeans))
+  
+  ## if(method == "ML") {
+  ##   mu <- rowMeans(sapply(y_data$tables, colMeans))
+  ## } else {
+  ##   mu <- rep(0, nrow(Sigma_E_init))
+  ## }
   
   for(iter in 1:max_iter) {
 
@@ -27,11 +29,12 @@ EM_oneway <- function(y_data,
     balanced_data <- balance_data(y_data, cond_params)
     ss_mats_base  <- ss_oneway(balanced_data)
 
-    if(method == "ML") {
-      mu <- rowMeans(sapply(balanced_data$tables, colMeans))
-    } else {
-      mu <- rep(0, nrow(Sigma_E_init))
-    }
+    mu <- rowMeans(sapply(balanced_data$tables, colMeans))
+    ## if(method == "ML") {
+    ##   mu <- rowMeans(sapply(balanced_data$tables, colMeans))
+    ## } else {
+    ##   mu <- rep(0, nrow(Sigma_E_init))
+    ## }
     
     J         <- y_data$n_ind
     I         <- y_data$n_sires
@@ -46,6 +49,36 @@ EM_oneway <- function(y_data,
       A_A <- A_A + n_missing[i]^2 * (1 - 1/I)/J * cond_params[[i]]$cov
     }
 
+    if(method == "REML") {
+      # Currently not at all optimised
+      inv_n_obs <- (J - n_missing)
+      S_mats <- sum_inverse(Sigma_E, Sigma_A, inv_n_obs)
+
+      W_inv <- 0 * Sigma_A
+      for(i in 1:length(y_data$tables)) {
+        W_inv <- W_inv + S_mats[[paste(inv_n_obs[i])]]
+      }
+      W <- solve(W_inv)
+
+      Id <- diag(nrow(W_inv))
+      for(i in 1:length(y_data$tables)) {
+        S_i <- S_mats[[paste(inv_n_obs[i])]]
+        
+        A_E <- A_E + n_missing[i] * (1 - n_missing[i]/J) *
+          t(Id - S_i %*% Sigma_A) %*% W %*% (Id - S_i %*% Sigma_A)
+
+        A_A <- A_A + n_missing[i]^2 * 1/J *
+          t(Id - S_i %*% Sigma_A) %*% W %*% (Id - S_i %*% Sigma_A)
+
+        for(j in 1:length(y_data$tables)) {
+          S_j <- S_mats[[paste(inv_n_obs[j])]]
+          
+          A_A <- A_A - n_missing[i] * n_missing[j] * 1/(I*J) *
+            t(Id - S_j %*% Sigma_A) %*% W %*% (Id - S_i %*% Sigma_A)
+        }
+      }
+    }
+    
     # E_step
     degf_E <- I * (J - 1)
     degf_A <- I - (method == "REML")
@@ -53,7 +86,7 @@ EM_oneway <- function(y_data,
     
     Sigma_E = curr_primal[[1]]
     Sigma_A = (curr_primal[[2]] - curr_primal[[1]])/J
-
+    
     # check for convergence
     if(iter > 1) {
       err <- mat_err(prev_primal, curr_primal, list(degf_E, degf_A))
@@ -130,6 +163,33 @@ paired_inverse <- function(Sigma_E, Sigma_A, ns, E_type = c("cov", "prec")) {
   inv_mats <- list()
   for(n in ns) {
     inv_mats[[paste(n)]] <- UtP %*% diag(1/(W_eigen$values * n + 1)) %*% t(UtP)
+  }
+
+  return(inv_mats)
+}
+
+#' Compute (A + E/n)^(-1) for a vector of ns
+#'
+#' @param A,E Symmetric nonnegative-definite square matrices
+#' @param ns A vector of doubles
+#'
+#' @return A list of inverted matrices indexed by the vector `ns`
+#'
+#' @export
+sum_inverse <- function(Sigma_E, Sigma_A, ns) {
+  
+  U <- eigensqrt(Sigma_E)
+  U_inv <- solve(U)
+
+  W <- t(U_inv) %*% Sigma_A %*% U_inv
+
+  W_eigen <- eigen(W, symmetric = TRUE)
+
+  UinvP <- U_inv %*% W_eigen$vectors
+
+  inv_mats <- list()
+  for(n in ns) {
+    inv_mats[[paste(n)]] <- UinvP %*% diag(1/(W_eigen$values + 1/n)) %*% t(UinvP)
   }
 
   return(inv_mats)

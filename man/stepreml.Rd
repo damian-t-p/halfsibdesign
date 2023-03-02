@@ -16,7 +16,8 @@ stepreml_2way_mat(
   max_iter = 50,
   err.tol = 1e-06,
   verbose = FALSE,
-  log_crit = c("output", "never", "always")
+  log_crit = c("output", "never", "always"),
+  method = c("REML", "ML")
 )
 
 stepreml_2way_df(df, ...)

@@ -1,6 +1,6 @@
 #' Compute the conditional covariances of two-way MANOVA random effects
 #'
-#' Under the model `y[ijk] == mu + a[i] + beta[ij} + epsilon[ijk]`, where
+#' Under the model `y[ijk] == mu + a[i] + beta[ij] + epsilon[ijk]`, where
 #' each `alpha[i]`, `beta[ij]` and `epsilon[ijk]` are independent mean-0,
 #' `q`-dimensional normal random vectors with with covariance matrices
 #' `Sigma[A]`, `Sigma[B]` and `Sigma[E]` respectively, compute the covariance
@@ -27,7 +27,7 @@ cond_cov <- function(init_covs, data) {
   Sigma_B <- init_covs$dam
   Sigma_A <- init_covs$sire
 
-  # List of numbers of individuals observes per dam indexed by sire
+  # List of numbers of individuals observed per dam indexed by sire
   dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
 
   # All observation count vectors that are distince up to reordering
@@ -47,7 +47,7 @@ cond_cov <- function(init_covs, data) {
 
   CD_inv <- list()
   for(n in unique_counts) {
-    CD_inv[[paste(n)]] <- Omega_E %*% D_inv[[paste(n)]] / n
+    CD_inv[[paste(n)]] <- n * Omega_E %*% D_inv[[paste(n)]]
   }
 
   ## Build tables for the blocks of the conditional covariance using the block inversion formula
@@ -86,8 +86,7 @@ cond_cov <- function(init_covs, data) {
       main_blocks_l2 <- list()
       for(m in ns) {
         if(m >= n) {
-          main_blocks_l2[[paste(m)]] <- t(CD_inv[[paste(m)]] %*% W(ns) %*% CD_inv[[paste(n)]])
-          
+          main_blocks_l2[[paste(m)]] <- t(CD_inv[[paste(n)]]) %*% W(ns) %*% CD_inv[[paste(m)]]
         }
       }
 
@@ -129,7 +128,7 @@ cond_cov <- function(init_covs, data) {
       if(n <= m) {
         out_block <- main_blocks[[toString(ns_sort)]][[paste(n)]][[paste(m)]]
       } else {
-        out_block <- main_blocks[[toString(ns_sort)]][[paste(m)]][[paste(n)]]
+        out_block <- t(main_blocks[[toString(ns_sort)]][[paste(m)]][[paste(n)]])
       }
 
       # Add additional blocks along main block diagonal
@@ -141,6 +140,62 @@ cond_cov <- function(init_covs, data) {
       
     }
   }
+}
+
+cond_mean_new <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$dims$q)) {
+
+  Omega_E <- solve(init_covs$ind)
+  
+  # centre dam sums by prior mean
+  dam_sums  <- data$dam_sums - data$n.observed$inds %o% prior_mean
+
+  # Skew sire and dam sums by precision
+  dam_skew  <- dam_sums %*% Omega_E
+  sire_skew <- rowsum(dam_skew, data$sires)
+  
+  # list indexed by sires with vectors of dam names
+  dam_idxs <- split(names(data$sires), data$sires)
+
+  # Empty matrices to be populated by outputs
+  sire_means <- matrix(
+    0,
+    nrow     = data$dims$I,
+    ncol     = data$dims$q,
+    dimnames = list(names(dam_idxs))
+  )
+  
+  dam_means <- matrix(
+    0,
+    nrow     = nrow(data$dam_sums),
+    ncol     = data$dims$q,
+    dimnames = list(rownames(data$dam_sums))
+  )
+
+  for(sire in names(dam_idxs)) {
+
+    # Indices of dams whose sire is `sire`
+    dams <- dam_idxs[[sire]]
+    
+    sire_means[sire, ] <- sire_means[sire, ] + cond_cov(sire, "group", "group") %*% sire_skew[sire, ]
+    for(dam in dams) {
+      sire_means[sire, ] <- sire_means[sire, ] + cond_cov(sire, "group", dam) %*% dam_skew[dam, ]
+    }
+    
+    for(dam in dams) {
+
+      dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, "group") %*% sire_skew[sire, ]
+      for(dam2 in dams) {
+        dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, dam2) %*% dam_skew[dam2, ]
+      }
+        
+    }
+    
+  }
+
+  list(
+    sire = sire_means,
+    dam  = dam_means
+  )
 }
 
 #' Compute the conditional mean of two-way MANOVA random effects
@@ -202,7 +257,6 @@ cond_mean <- function(init_covs, data, prior_mean = rep(0, data$dims$q)) {
     n  <- sum(ns)
 
     sire_means[sire, ] <- sire_prec_block[[paste(n)]] %*% (Omega_E %*% sire_sums[sire, ])
-
 
     # Indices of dams whose sire is `sire`
     dams <- dam_idxs[[sire]]

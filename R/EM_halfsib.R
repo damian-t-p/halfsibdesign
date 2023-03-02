@@ -8,7 +8,8 @@ EM_fit.halfsibdata <- function(data,
                                prior_covs,
                                method   = c("ML", "REML"),
                                max_iter = 1000,
-                               err.tol  = 1e-6) {
+                               err.tol  = 1e-6,
+                               mean_type = "new") {
 
   method <- match.arg(method)  
 
@@ -27,7 +28,12 @@ EM_fit.halfsibdata <- function(data,
   for(iter in 1:max_iter) {
     
     ccov  <- cond_cov(prior_covs, data)
-    cmean <- cond_mean(prior_covs, data, prior_mean = mu)
+
+    if(mean_type == "new") {
+      cmean <- cond_mean_new(prior_covs, ccov, data, prior_mean = mu)
+    } else {
+      cmean <- cond_mean(prior_covs, data, prior_mean = mu)
+    }
 
     balanced_data <- balance(data, cmean, globmean = mu)
 
@@ -73,13 +79,16 @@ EM_fit.halfsibdata <- function(data,
     }
 
     # E step
-    curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I, log_crit = "never")
+    curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I, log_crit = "never", method = method)
 
     prior_covs <- list(
       ind = curr_primal$S1,
       dam = curr_primal$S2,
       sire = curr_primal$S3
     )
+
+    ## print("-----------------------------------")
+    ## print(prior_covs)
     
     if(iter > 1) {
       err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * (J-1), I-1))

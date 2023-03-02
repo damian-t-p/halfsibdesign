@@ -25,7 +25,7 @@ effects \code{beta[ij]} and \code{beta[ik]}. If \code{j == "group"}, returns the
 covariance of \code{alpha[i]} and \code{beta[ik]}. and similarly if \code{j == "group"}.
 }
 \description{
-Under the model \verb{y[ijk] == mu + a[i] + beta[ij\} + epsilon[ijk]}, where
+Under the model \code{y[ijk] == mu + a[i] + beta[ij] + epsilon[ijk]}, where
 each \code{alpha[i]}, \code{beta[ij]} and \code{epsilon[ijk]} are independent mean-0,
 \code{q}-dimensional normal random vectors with with covariance matrices
 \code{Sigma[A]}, \code{Sigma[B]} and \code{Sigma[E]} respectively, compute the covariance
