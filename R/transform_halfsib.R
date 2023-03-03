@@ -9,6 +9,8 @@ balance <- function(data, ...) {
 #' @export
 balance.halfsibdata <- function(data, means, globmean = rep(0, data$dims$q)) {
 
+  stopifnot(is.dam_balanced(data))
+  
   # Conditional mean of observations. These are the same within dams, so they
   # are indexed by dam
   obs_means  <- means$dam + means$sire[data$sires, ] + rep(globmean, each = nrow(means$dam))
@@ -33,4 +35,43 @@ balance.halfsibdata <- function(data, means, globmean = rep(0, data$dims$q)) {
     obs_dams = data$n.observed$dams * 0 + data$dims$J,
     obs_inds = data$n.observed$inds * 0 + data$dims$K
   )
+}
+
+
+include_unobs_dams <- function(data) {
+  new_sires <- extend_names(
+    data$dims$J - data$n.observed$dams,
+    existing_dams = names(data$sires)
+  )
+
+  n_new <- length(new_sires)
+  
+  new_dam_sums <- matrix(
+    data     = 0,
+    nrow     = n_new,
+    ncol     = data$dims$q,
+    dimnames = list(names(new_sires))
+  )
+
+  data$dam_sums          <- rbind(data$dam_sums, new_dam_sums)
+  data$sires             <- c(data$sires, new_sires)
+  data$n.observed$dams[] <- data$dims$J
+  data$n.observed$inds   <- c(data$n.observed$inds,
+                              setNames(rep(0, n_new), names(new_sires)))
+
+  data
+}
+
+#' Create new names for dams based on their sires
+extend_names <- function(sires, existing_dams = character(0)) {
+  unaccounted_dams <- sires %>%
+    mapply(\(count, sire) rep(sire, count), ., names(.)) %>%
+    Reduce(c, .)
+
+  k <- length(existing_dams)
+  full_dams <- c(existing_dams, unaccounted_dams)
+  
+  names(unaccounted_dams) <- make.names(full_dams, unique = TRUE)[(k+1):length(full_dams)]
+
+  unaccounted_dams
 }

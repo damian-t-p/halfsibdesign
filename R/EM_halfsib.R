@@ -13,6 +13,10 @@ EM_fit.halfsibdata <- function(data,
 
   method <- match.arg(method)  
 
+  if(!is.dam_balanced(data)) {
+    data <- include_unobs_dams(data)
+  }
+  
   I <- data$dims$I
   J <- data$dims$J
   K <- data$dims$K
@@ -20,10 +24,11 @@ EM_fit.halfsibdata <- function(data,
   n_missing <- K - data$n.observed$inds
 
   if(method == "ML") {
-      mu <- colMeans(data$dam_sums / data$n.observed$inds)
-    } else {
-      mu <- rep(0, data$dims$q)
-    }
+    # Might have 0 observed individuals per dam, in which case the mean should be 0.
+    mu <- colMeans(data$dam_sums / pmax(data$n.observed$inds, 1))
+  } else {
+    mu <- rep(0, data$dims$q)
+  }
   
   for(iter in 1:max_iter) {
     

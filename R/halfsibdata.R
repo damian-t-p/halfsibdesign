@@ -40,7 +40,7 @@ halfsibdata.matrix <- function(values, sires, dams) {
   validate_halfsibdata(values, sires, dams)
 }
 
-validate_halfsibdata <- function(values, sires, dams) {
+validate_halfsibdata <- function(values, sires, dams, allow_unbalanced = TRUE) {
 
   sires <- make.names(sires)
   dams  <- make.names(dams)
@@ -60,7 +60,7 @@ validate_halfsibdata <- function(values, sires, dams) {
     \(v) length(unique(v))
   )
 
-  if(length(unique(observed_dams)) != 1) {
+  if(isFALSE(allow_unbalanced) && length(unique(observed_dams)) != 1) {
     stop(
       "Must have the same number of dams for each sire",
       call. = FALSE
@@ -121,3 +121,10 @@ new_halfsibdata <- function(sos,
   
 }
 
+is.dam_balanced <- function(data) {
+  length(unique(data$n.observed$dams)) == 1
+}
+
+## is.balanced <- function(data) {
+##   isTRUE(is.dam_balanced) && (length(unique(data$n.observed$inds)) == 1)
+## }

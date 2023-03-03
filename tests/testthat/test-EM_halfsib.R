@@ -19,7 +19,7 @@ df_full <- rhalfsib(mu, A, I, B, J, E, K)
 
 df_unbalanced <- df_full %>%
   dplyr::group_split(sire, dam, individual) %>%
-  sample(size = floor(0.9 * (I*J*K)), replace = FALSE) %>%
+  sample(size = floor(0.5 * (I*J*K)), replace = FALSE) %>%
   dplyr::bind_rows()
 
 data <- halfsibdata(df_unbalanced, ind_name = individual)
