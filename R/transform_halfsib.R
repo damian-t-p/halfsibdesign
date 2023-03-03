@@ -26,14 +26,15 @@ balance.halfsibdata <- function(data, means, globmean = rep(0, data$dims$q)) {
   full_sos   <- data$sos + t(unobs_sums_semi) %*% unobs_sums_semi
 
   new_halfsibdata(
-    sos      = full_sos,
-    dam_sums = full_sums,
-    sires    = data$sires,
-    I        = data$dims$I,
-    J        = data$dims$J,
-    K        = data$dims$K,
-    obs_dams = data$n.observed$dams * 0 + data$dims$J,
-    obs_inds = data$n.observed$inds * 0 + data$dims$K
+    sos         = full_sos,
+    dam_sums    = full_sums,
+    sires       = data$sires,
+    I           = data$dims$I,
+    J           = data$dims$J,
+    K           = data$dims$K,
+    obs_dams    = data$n.observed$dams * 0 + data$dims$J,
+    obs_inds    = data$n.observed$inds * 0 + data$dims$K,
+    level_names = data$level_names
   )
 }
 

@@ -5,11 +5,14 @@ EM_fit <- function(data, ...) {
 
 #' @export
 EM_fit.halfsibdata <- function(data,
-                               prior_covs,
-                               method   = c("ML", "REML"),
-                               max_iter = 1000,
-                               err.tol  = 1e-6,
-                               mean_type = "new") {
+                               prior_covs = list(
+                                 ind  = diag(1, nrow = data$dims$q),
+                                 dam  = diag(1, nrow = data$dims$q),
+                                 sire = diag(1, nrow = data$dims$q)
+                               ),
+                               method     = c("ML", "REML"),
+                               max_iter   = 1000,
+                               err.tol    = 1e-6) {
 
   method <- match.arg(method)  
 
@@ -33,12 +36,7 @@ EM_fit.halfsibdata <- function(data,
   for(iter in 1:max_iter) {
     
     ccov  <- cond_cov(prior_covs, data)
-
-    if(mean_type == "new") {
-      cmean <- cond_mean_new(prior_covs, ccov, data, prior_mean = mu)
-    } else {
-      cmean <- cond_mean(prior_covs, data, prior_mean = mu)
-    }
+    cmean <- cond_mean_new(prior_covs, ccov, data, prior_mean = mu)
 
     balanced_data <- balance(data, cmean, globmean = mu)
 
@@ -105,5 +103,14 @@ EM_fit.halfsibdata <- function(data,
     prev_primal <- curr_primal
   }
 
-  return(prior_covs)
+  out_covs <- rlang::list2(
+    !!data$level_names$ind_name  := prior_covs$ind,
+    !!data$level_names$dam_name  := prior_covs$dam,
+    !!data$level_names$sire_name := prior_covs$sire
+  )
+  
+  lapply(
+    out_covs,
+    \(A) {dimnames(A) <- dimnames(M_E); A}
+  )
 }
