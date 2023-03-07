@@ -16,7 +16,7 @@ prior_covs <- list(
 )
 
 ccov <- cond_cov(prior_covs, data)
-cmean <- cond_mean(prior_covs, data)
+cmean <- cond_mean(prior_covs, ccov, data)
 
 balanced_data <- balance(data, cmean)
 
@@ -56,6 +56,6 @@ unbalanced_data <- halfsibdata(values, sires, dams)
 dam_unbalanced_data <- include_unobs_dams(unbalanced_data)
 
 ccov <- cond_cov(prior_covs, dam_unbalanced_data)
-cmean <- cond_mean(prior_covs, dam_unbalanced_data)
+cmean <- cond_mean(prior_covs, ccov, dam_unbalanced_data)
 
 balanced_data <- balance(dam_unbalanced_data, cmean)

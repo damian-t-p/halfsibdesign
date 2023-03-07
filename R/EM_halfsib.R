@@ -36,7 +36,7 @@ EM_fit.halfsibdata <- function(data,
   for(iter in 1:max_iter) {
     
     ccov  <- cond_cov(prior_covs, data)
-    cmean <- cond_mean_new(prior_covs, ccov, data, prior_mean = mu)
+    cmean <- cond_mean(prior_covs, ccov, data, prior_mean = mu)
 
     balanced_data <- balance(data, cmean, globmean = mu)
 

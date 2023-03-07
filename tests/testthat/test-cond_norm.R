@@ -29,8 +29,7 @@ test_that("Covariance matrices work correctly for dams with equal observation nu
   expect_false(all(ccov("X2", "X3", "X3") == ccov("X2", "X3", "X4")))
 })
 
-cmean <- cond_mean(prior_covs, data)
-cmean_new <- cond_mean_new(prior_covs, ccov, data)
+cmean <- cond_mean(prior_covs, ccov, data)
 
 test_that("Sire means have correct dimensions", {
   expect_equal(ncol(cmean$sire), q)

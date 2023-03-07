@@ -52,6 +52,12 @@ cond_cov <- function(init_covs, data) {
 
   ## Build tables for the blocks of the conditional covariance using the block inversion formula
 
+  # The blocks (1, 1)
+  # Indexing format:
+  #   $sort(n[i1], ..., n[iJ])
+  #     - a list for each combinations of observation numbers present among the sires
+  W_blocks <- list()
+  
   # The blocks (1, 2), ..., (1, J + 1) running along the top of the covariance matrix for each i
   # Indexing format:
   #   $sort(n[i1], ..., n[iJ])
@@ -94,8 +100,9 @@ cond_cov <- function(init_covs, data) {
       
     }
 
-    top_blocks[[toString(ns)]] <- top_blocks_curr
+    top_blocks[[toString(ns)]]  <- top_blocks_curr
     main_blocks[[toString(ns)]] <- main_blocks_l1
+    W_blocks[[toString(ns)]]    <- W(ns)
   }
 
   # The closure function looks up the relevant entry in `top_blocks` and `main_blocks`,
@@ -111,7 +118,7 @@ cond_cov <- function(init_covs, data) {
       # correlation with the sire effect along first row
       
       if(k == "group") {
-        return(W(ns))
+        return(W_blocks[[toString(ns_sort)]])
       } else {
         return(top_blocks[[toString(ns_sort)]][[paste(ns[k])]])
       }
@@ -142,7 +149,26 @@ cond_cov <- function(init_covs, data) {
   }
 }
 
-cond_mean_new <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$dims$q)) {
+#' Compute the conditional mean of two-way MANOVA random effects
+#' 
+#' Under the model `y[ijk] == mu + a[i] + beta[ij] + epsilon[ijk]`, where
+#' each `alpha[i]`, `beta[ij]` and `epsilon[ijk]` are independent mean-0,
+#' `q`-dimensional normal random vectors with with covariance matrices
+#' `Sigma[A]`, `Sigma[B]` and `Sigma[E]` respectively, compute the means
+#' of `(alpha[i], beta[i1], ..., beta[iJ])` conditional on the observed data
+#' for each `i`.
+#'
+#' @param init_covs A list of prior covariances. Must have an entry `$ind`.
+#' @param cond_cov A function that returns conditional covariance matrices as
+#' created by `halfsibdesign::cond_cov`
+#' @param data An object inheriting `halfsibdata`
+#' @param prior_mean A vector of the prior global mean
+#'
+#' @return A list with entries `sire` and `dam` whose rows are the posterior
+#' means of `alpha[i]` and `beta[ij]` respectively.
+#' 
+#' @export
+cond_mean <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$dims$q)) {
 
   Omega_E <- solve(init_covs$ind)
   
@@ -187,86 +213,6 @@ cond_mean_new <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$di
       for(dam2 in dams) {
         dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, dam2) %*% dam_skew[dam2, ]
       }
-        
-    }
-    
-  }
-
-  list(
-    sire = sire_means,
-    dam  = dam_means
-  )
-}
-
-#' Compute the conditional mean of two-way MANOVA random effects
-#' 
-#' Under the model `y[ijk] == mu + a[i] + beta[ij} + epsilon[ijk]`, where
-#' each `alpha[i]`, `beta[ij]` and `epsilon[ijk]` are independent mean-0,
-#' `q`-dimensional normal random vectors with with covariance matrices
-#' `Sigma[A]`, `Sigma[B]` and `Sigma[E]` respectively, compute the means
-#' of `(alpha[i], beta[i1], ..., beta[iJ])` conditional on the observed data
-#' for each `i`.
-#' 
-#' @param cond_cov A function that returns conditional covariance matrices as
-#' created by `halfsibdesign::cond_cov`
-#' @param data An object inheriting `halfsibdata`
-#' @param prior_mean A vector of the prior global mean
-#'
-#' @return A list with entries `sire` and `dam` whose rows are the posterior
-#' means of `alpha[i]` and `beta[ij]` respectively.
-#' 
-#' @export
-cond_mean <- function(init_covs, data, prior_mean = rep(0, data$dims$q)) {
-
-  Sigma_E <- init_covs$ind
-  Sigma_B <- init_covs$dam
-  Sigma_A <- init_covs$sire
-  
-  # centre dam sums by prior mean
-  dam_sums  <- data$dam_sums - data$n.observed$inds %o% prior_mean
-
-  sire_sums <- rowsum(dam_sums, data$sires)
-  
-  # list indexed by sires with vectors of dam names
-  dam_idxs <- split(names(data$sires), data$sires)
-
-  # Empty matrices to be populated by outputs
-  sire_means <- matrix(
-    nrow     = data$dims$I,
-    ncol     = data$dims$q,
-    dimnames = list(names(dam_idxs))
-  )
-  
-  dam_means <- matrix(
-    nrow     = nrow(data$dam_sums),
-    ncol     = data$dims$q,
-    dimnames = list(rownames(data$dam_sums))
-  )
-
-  Omega_E <- solve(Sigma_E)
-  
-  obs_per_dam <- unique(data$n.observed$inds)
-  obs_per_sire <- unique(sapply(split(data$n.observed$inds, data$sires), sum))
-
-  sire_prec_block <- paired_inverse(Omega_E, Sigma_A, obs_per_sire, E_type = "prec")
-  dam_prec_block <- paired_inverse(Omega_E, Sigma_B, obs_per_dam, E_type = "prec")
-  
-  for(sire in names(dam_idxs)) {
-    
-    ns <- data$n.observed$inds[dam_idxs[[sire]]]
-    n  <- sum(ns)
-
-    sire_means[sire, ] <- sire_prec_block[[paste(n)]] %*% (Omega_E %*% sire_sums[sire, ])
-
-    # Indices of dams whose sire is `sire`
-    dams <- dam_idxs[[sire]]
-    
-    for(dam in dams) {
-
-      nj <- data$n.observed$inds[dam]
-
-      dam_means[dam, ] <- dam_prec_block[[paste(nj)]] %*%
-        (Omega_E %*% (dam_sums[dam, ] - nj * sire_means[sire, ]))
         
     }
     
