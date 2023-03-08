@@ -11,6 +11,7 @@ EM_fit.halfsibdata <- function(data,
                                  sire = diag(1, nrow = data$dims$q)
                                ),
                                method     = c("ML", "REML"),
+                               flat_sire  = FALSE,
                                max_iter   = 1000,
                                err.tol    = 1e-6) {
 
@@ -35,7 +36,7 @@ EM_fit.halfsibdata <- function(data,
   
   for(iter in 1:max_iter) {
     
-    ccov  <- cond_cov(prior_covs, data)
+    ccov  <- cond_cov(prior_covs, data, flat_sire = flat_sire)
     cmean <- cond_mean(prior_covs, ccov, data, prior_mean = mu)
 
     balanced_data <- balance(data, cmean, globmean = mu)
@@ -81,8 +82,12 @@ EM_fit.halfsibdata <- function(data,
       }
     }
 
+    if (I == 1) {
+      M_A <- matrix(0, nrow = data$dims$q, ncol = data$dims$q)
+    }
+    
     # E step
-    curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I, log_crit = "never", method = method)
+    curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I, log_crit = "never", method = "ML")
 
     prior_covs <- list(
       ind = curr_primal$S1,
@@ -94,7 +99,7 @@ EM_fit.halfsibdata <- function(data,
     ## print(prior_covs)
     
     if(iter > 1) {
-      err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * (J-1), I-1))
+      err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * (J-1), I - (method == "ML")))
       if(err < err.tol) {break}
     } else {
       err <- NA
@@ -108,6 +113,10 @@ EM_fit.halfsibdata <- function(data,
     !!data$level_names$dam_name  := prior_covs$dam,
     !!data$level_names$sire_name := prior_covs$sire
   )
+
+  if(isTRUE(flat_sire)) {
+    out_covs[[3]] <- NULL
+  }
   
   lapply(
     out_covs,

@@ -4,7 +4,7 @@
 \alias{cond_cov}
 \title{Compute the conditional covariances of two-way MANOVA random effects}
 \usage{
-cond_cov(init_covs, data)
+cond_cov(init_covs, data, flat_sire = FALSE)
 }
 \arguments{
 \item{init_covs}{A list of prior covariance matrices with entries named
@@ -12,6 +12,9 @@ cond_cov(init_covs, data)
 and between-sires covariances,}
 
 \item{data}{An object inheriting \code{halfsibdata}}
+
+\item{flat_sire}{A logical indicating whether a flat prior should be used
+for the sire effect.}
 }
 \value{
 A closure that takes the following arguments:

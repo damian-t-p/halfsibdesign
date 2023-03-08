@@ -5,7 +5,7 @@
 \title{Compute (Sigma\link{A} + sum((Sigma\link{B} + Sigma\link{E}/n\link{j})^(-1)))^(-1) for
 values of n\link{j} given in \code{data}}
 \usage{
-make_W(init_covs, data)
+make_W(init_covs, data, flat_sire = FALSE)
 }
 \description{
 Compute (Sigma\link{A} + sum((Sigma\link{B} + Sigma\link{E}/n\link{j})^(-1)))^(-1) for

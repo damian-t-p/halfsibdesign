@@ -11,6 +11,8 @@
 #' `ind`, `dam` and `sire` indicating the between-individuals, between-dams
 #' and between-sires covariances,
 #' @param data An object inheriting `halfsibdata`
+#' @param flat_sire A logical indicating whether a flat prior should be used
+#' for the sire effect.
 #'
 #' @return A closure that takes the following arguments:
 #'  - `i`: The name of sire
@@ -21,7 +23,7 @@
 #' covariance of `alpha[i]` and `beta[ik]`. and similarly if `j == "group"`.
 #' 
 #' @export
-cond_cov <- function(init_covs, data) {
+cond_cov <- function(init_covs, data, flat_sire = FALSE) {
 
   Omega_E <- solve(init_covs$ind)
   Sigma_B <- init_covs$dam
@@ -42,7 +44,7 @@ cond_cov <- function(init_covs, data) {
   sire_counts <- sapply(dam_counts, sum)
 
   ## Compute matrices required for block inversion
-  W     <- make_W(init_covs, data)
+  W     <- make_W(init_covs, data, flat_sire)
   D_inv <- paired_inverse(Omega_E, Sigma_B, unique_counts, E_type = "prec")
 
   CD_inv <- list()
@@ -228,7 +230,7 @@ cond_mean <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$dims$q
 #' values of n[j] given in `data`
 #' 
 #' @export
-make_W <- function(init_covs, data) {
+make_W <- function(init_covs, data, flat_sire = FALSE) {
 
   Sigma_E <- init_covs$ind
   Sigma_B <- init_covs$dam
@@ -268,14 +270,15 @@ make_W <- function(init_covs, data) {
     D[[paste(n)]] <- diag(1 / (d + 1/n))
   }
 
-  ## A <- U_invQ_inv %*% solve(Sigma_A, t(U_invQ_inv))
-
   W_list <- list()
   for(n_vec in unique_count_vecs) {
     D_curr <- Reduce(`+`, D[paste(n_vec)])
 
-    ## W_list[[toString(n_vec)]] <- t(U_invQ_inv) %*% solve(A + D_curr, U_invQ_inv)
-    W_list[[toString(n_vec)]] <- solve(diag(q) + Sigma_A %*% U_invQ %*% D_curr %*% t(U_invQ), Sigma_A)
+    if(isTRUE(flat_sire)) {
+      W_list[[toString(n_vec)]] <- solve(U_invQ %*% D_curr %*% t(U_invQ))
+    } else {
+      W_list[[toString(n_vec)]] <- solve(diag(q) + Sigma_A %*% U_invQ %*% D_curr %*% t(U_invQ), Sigma_A)
+    }
   }
 
   function(n_vec) {
