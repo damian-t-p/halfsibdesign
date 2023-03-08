@@ -91,6 +91,56 @@ cond_cov_mats <- function(init_covs, data, flat_sire = FALSE) {
   
 }
 
+cond_cov_counts <- function(init_covs, data, flat_sire = FALSE) {
+
+  mats <- cond_cov_mats(init_covs, data, flat_sire)
+
+  top_blocks  <- mats$top_blocks
+  main_blocks <- mats$main_blocks
+  W_blocks    <- mats$W_blocks
+  D_inv       <- mats$D_inv
+
+  dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
+  
+  # The closure function looks up the relevant entry in `top_blocks` and `main_blocks`,
+  # additionally adding D[ij]^(-1) as required along the block diagonal.
+  #
+  # i, j, k should all be sire and dam labels, not integers
+  function(ns, n, m, equal_idx = FALSE) {
+    
+    if(n == "group") {
+      # correlation with the sire effect along first row
+      
+      if(m == "group") {
+        return(W_blocks[[ns]])
+      } else {
+        return(top_blocks[[ns]][[m]])
+      }
+    } else if (m == "group") {
+      # correlation with the sire effect along the first column
+      
+      return(t(top_blocks[[ns]][[n]]))
+      
+    } else {
+      # correlations between dam effects
+      
+      if(n <= m) {
+        out_block <- main_blocks[[ns]][[n]][[m]]
+      } else {
+        out_block <- t(main_blocks[[ns]][[m]][[n]])
+      }
+
+      # Add additional blocks along main block diagonal
+      if(equal_idx) {
+        out_block <- out_block + D_inv[[n]]
+      }
+
+      return(out_block)
+      
+    }
+  }
+}
+
 #' Compute the conditional covariances of two-way MANOVA random effects
 #'
 #' Under the model `y[ijk] == mu + a[i] + beta[ij] + epsilon[ijk]`, where
