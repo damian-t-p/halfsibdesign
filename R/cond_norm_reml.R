@@ -7,7 +7,7 @@ block_conjugate <- function(cond_cov, conj_mat, one_side = TRUE) {
   rlang::fn_env(cond_cov) <- new_env
 
   if (isTRUE(one_side)) {
-     conj_by <- function(M) conj_mat %*% M
+    conj_by <- function(M) conj_mat %*% M
   } else {
     conj_by <- function(M) conj_mat %*% M %*% conj_mat
   }
@@ -31,7 +31,7 @@ block_conjugate <- function(cond_cov, conj_mat, one_side = TRUE) {
   return(cond_cov)
 }
 
-cond_cov_reml <- function(init_covs, cond_cov, data) {
+cond_cov_reml_conj <- function(init_covs, cond_cov, data) {
   
   Omega_E       <- solve(init_covs$ind)
   cond_cov_conj <- block_conjugate(cond_cov, Omega_E)
@@ -63,6 +63,42 @@ cond_cov_reml <- function(init_covs, cond_cov, data) {
   }
 
   W <- solve(W_inv)
+
+  return(W)
+  
+}
+
+cond_cov_reml <- function(init_covs, cond_cov, data) {
+  
+  Sigma_E     <- init_covs$ind
+  
+  n_obs_total <- sum(data$n.observed$inds)
+  W_inv       <- n_obs_total * Sigma_E
+
+  dam_names <- split(names(data$sires), data$sires)
+  
+  for(sire in names(dam_names)) {
+    n_obs_sire <- sum(data$n.observed$inds[dam_names[[sire]]])
+
+    W_inv <- W_inv - n_obs_sire^2 * cond_cov(sire, "group", "group")
+
+    for(dam in dam_names[[sire]]) {
+
+      n_obs_dam <- data$n.observed$inds[dam]
+      
+      W_inv <- W_inv - n_obs_dam * n_obs_sire * cond_cov(sire, "group", dam)
+      W_inv <- W_inv - n_obs_dam * n_obs_sire * cond_cov(sire, dam, "group")
+
+      for(dam2 in dam_names[[sire]]) {
+
+        n_obs_dam2 <- data$n.observed$inds[dam2]
+        
+        W_inv <- W_inv - n_obs_dam * n_obs_dam2 * cond_cov(sire, dam, dam2)
+      }
+    }
+  }
+
+  W <- Sigma_E %*% solve(W_inv) %*% Sigma_E
 
   return(W)
   

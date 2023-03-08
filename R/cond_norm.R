@@ -1,29 +1,4 @@
-#' Compute the conditional covariances of two-way MANOVA random effects
-#'
-#' Under the model `y[ijk] == mu + a[i] + beta[ij] + epsilon[ijk]`, where
-#' each `alpha[i]`, `beta[ij]` and `epsilon[ijk]` are independent mean-0,
-#' `q`-dimensional normal random vectors with with covariance matrices
-#' `Sigma[A]`, `Sigma[B]` and `Sigma[E]` respectively, compute the covariance
-#' matrices of `(alpha[i], beta[i1], ..., beta[iJ])` conditional on the
-#' observed data for each `i`.
-#' 
-#' @param init_covs A list of prior covariance matrices with entries named
-#' `ind`, `dam` and `sire` indicating the between-individuals, between-dams
-#' and between-sires covariances,
-#' @param data An object inheriting `halfsibdata`
-#' @param flat_sire A logical indicating whether a flat prior should be used
-#' for the sire effect.
-#'
-#' @return A closure that takes the following arguments:
-#'  - `i`: The name of sire
-#'  - `j`, `k`: The name of dam, or `"group"`
-#'
-#' The closure function returns the posterior covariance between the random
-#' effects `beta[ij]` and `beta[ik]`. If `j == "group"`, returns the posterior
-#' covariance of `alpha[i]` and `beta[ik]`. and similarly if `j == "group"`.
-#' 
-#' @export
-cond_cov <- function(init_covs, data, flat_sire = FALSE) {
+cond_cov_mats <- function(init_covs, data, flat_sire = FALSE) {
 
   Omega_E <- solve(init_covs$ind)
   Sigma_B <- init_covs$dam
@@ -107,6 +82,51 @@ cond_cov <- function(init_covs, data, flat_sire = FALSE) {
     W_blocks[[toString(ns)]]    <- W(ns)
   }
 
+  list(
+    top_blocks  = top_blocks,
+    main_blocks = main_blocks,
+    W_blocks    = W_blocks,
+    D_inv       = D_inv
+  )
+  
+}
+
+#' Compute the conditional covariances of two-way MANOVA random effects
+#'
+#' Under the model `y[ijk] == mu + a[i] + beta[ij] + epsilon[ijk]`, where
+#' each `alpha[i]`, `beta[ij]` and `epsilon[ijk]` are independent mean-0,
+#' `q`-dimensional normal random vectors with with covariance matrices
+#' `Sigma[A]`, `Sigma[B]` and `Sigma[E]` respectively, compute the covariance
+#' matrices of `(alpha[i], beta[i1], ..., beta[iJ])` conditional on the
+#' observed data for each `i`.
+#' 
+#' @param init_covs A list of prior covariance matrices with entries named
+#' `ind`, `dam` and `sire` indicating the between-individuals, between-dams
+#' and between-sires covariances,
+#' @param data An object inheriting `halfsibdata`
+#' @param flat_sire A logical indicating whether a flat prior should be used
+#' for the sire effect.
+#'
+#' @return A closure that takes the following arguments:
+#'  - `i`: The name of sire
+#'  - `j`, `k`: The name of dam, or `"group"`
+#'
+#' The closure function returns the posterior covariance between the random
+#' effects `beta[ij]` and `beta[ik]`. If `j == "group"`, returns the posterior
+#' covariance of `alpha[i]` and `beta[ik]`. and similarly if `j == "group"`.
+#' 
+#' @export
+cond_cov <- function(init_covs, data, flat_sire = FALSE) {
+
+  mats <- cond_cov_mats(init_covs, data, flat_sire)
+
+  top_blocks  <- mats$top_blocks
+  main_blocks <- mats$main_blocks
+  W_blocks    <- mats$W_blocks
+  D_inv       <- mats$D_inv
+
+  dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
+  
   # The closure function looks up the relevant entry in `top_blocks` and `main_blocks`,
   # additionally adding D[ij]^(-1) as required along the block diagonal.
   #
