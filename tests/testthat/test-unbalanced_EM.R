@@ -118,7 +118,7 @@ y_data <- fullsibdata(
   value_name = value
 )
 
-REML_mats <- EM_fit(data, flat_sire = TRUE, method = "REML")
+REML_mats <- EM_fit(data, method = "ML_nofix")
 ML_mats <- EM_oneway(y_data, diag(q), diag(q), method = "ML")
 
 test_that("REML and MLE give approximately the same results", {

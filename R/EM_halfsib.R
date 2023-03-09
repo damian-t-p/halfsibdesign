@@ -10,8 +10,8 @@ EM_fit.halfsibdata <- function(data,
                                  dam  = diag(1, nrow = data$dims$q),
                                  sire = diag(1, nrow = data$dims$q)
                                ),
-                               method     = c("ML", "REML"),
-                               flat_sire  = FALSE,
+                               method     = c("ML", "REML", "ML_nofix"),
+                               flat_sire  = (method == "ML_nofix"),
                                max_iter   = 1000,
                                err.tol    = 1e-6) {
 
@@ -35,9 +35,15 @@ EM_fit.halfsibdata <- function(data,
   }
   
   for(iter in 1:max_iter) {
-    
+
     ccov  <- cond_cov(prior_covs, data, flat_sire = flat_sire)
-    cmean <- cond_mean(prior_covs, ccov, data, prior_mean = mu)
+    if(method == "REML") {
+      ccov_raw  <- cond_cov_counts(prior_covs, data)
+      ccov_reml <- cond_cov_reml(prior_covs, ccov, ccov_raw, data)
+      cmean     <- cond_mean_reml(prior_covs, ccov_reml, data)
+    } else {
+      cmean <- cond_mean(prior_covs, ccov, data, prior_mean = mu)
+    }
 
     balanced_data <- balance(data, cmean, globmean = mu)
 
@@ -55,9 +61,24 @@ EM_fit.halfsibdata <- function(data,
     sire_names <- names(data$sires)
     dam_names  <- split(names(data$sires), data$sires)
 
-    ccomp <- function(sire, dam1, dam2) {
-      ccov(sire, "group", "group") + ccov(sire, "group", dam2) +
-        ccov(sire, dam1, "group") + ccov(sire, dam1, dam2)
+    if(method == "REML") {
+      ccomp_reml <- function(sire1, sire2, dam1, dam2) {
+        ccov_reml("group", "group", NA, NA) +
+          ccov_reml("group", sire2, NA, "group") + ccov_reml(sire1, "group", "group", NA) +
+          ccov_reml("group", sire2, NA, dam2) + ccov_reml(sire2, "group", dam2, NA) +
+          ccov_reml(sire1, sire2, "group", "group") +
+          ccov_reml(sire1, sire2, "group", dam2) + ccov_reml(sire1, sire2, dam1, "group") +
+          ccov_reml(sire1, sire2, dam1, dam2)
+      }
+
+      ccomp <- function(sire, dam1, dam2) {
+        ccov_reml(sire, sire, dam1, dam2)
+      }
+    } else {
+      ccomp <- function(sire, dam1, dam2) {
+        ccov(sire, "group", "group") + ccov(sire, "group", dam2) +
+          ccov(sire, dam1, "group") + ccov(sire, dam1, dam2)
+      }
     }
     
     for(sire in sire_names) {
@@ -77,7 +98,21 @@ EM_fit.halfsibdata <- function(data,
 
           M_A <- M_A +
             n_missing[[dam]] * n_missing[[dam2]] * ccomp(sire, dam, dam2) *
-            (1 - 1/I) * 1/(J * K) * 1/(I-1)
+            (1 - (method != "REML")/I) * 1/(J * K) * 1/(I-1)
+        }
+      }
+    }
+
+    if(method == "REML") {
+      for(sire in sire_names) {
+        for(sire2 in sire_names) {
+          for(dam in dam_names[[sire]]) {
+            for(dam2 in dam_names[[sire2]]) {
+              M_A <- M_A -
+                n_missing[[dam]] * n_missing[[dam2]] * ccomp_reml(sire, sire2, dam, dam2) *
+                (1 - 1/I) * 1/(J * K) * 1/(I-1)
+            }
+          }
         }
       }
     }
@@ -87,7 +122,14 @@ EM_fit.halfsibdata <- function(data,
     }
     
     # E step
-    curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I, log_crit = "never", method = "ML")
+    if (method %in% c("ML", "ML_nofix")) {
+      E_method <- "ML"
+    } else {
+      E_method <- method
+    }
+    curr_primal <- stepreml_2way_mat(M_E, K, M_B, J, M_A, I,
+                                     log_crit = "never",
+                                     method = E_method)
 
     prior_covs <- list(
       ind = curr_primal$S1,
@@ -99,7 +141,7 @@ EM_fit.halfsibdata <- function(data,
     ## print(prior_covs)
     
     if(iter > 1) {
-      err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * (J-1), I - (method == "ML")))
+      err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * (J-1), I - (E_method == "ML")))
       if(err < err.tol) {break}
     } else {
       err <- NA

@@ -31,6 +31,7 @@ prior_covs <- list(
 )
 
 EM_mats <- EM_fit.halfsibdata(data, prior_covs)
+## EM_mats_reml <- EM_fit.halfsibdata(data, prior_covs, method = "REML")
 
 ###
 
