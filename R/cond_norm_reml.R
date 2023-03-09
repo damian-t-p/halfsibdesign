@@ -256,6 +256,65 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
 
 cond_mean_reml <- function(init_covs, cond_cov, data) {
 
-  Omega_E <- solve(init_covs_int)
+  Omega_E <- solve(init_covs$ind)
+
+  dam_skew   <- data$dam_sums %*% Omega_E
+  sire_skew  <- rowsum(dam_skew, data$sires)
+  grand_skew <- colSums(sire_skew)
+
+  # list indexed by sires with vectors of dam names
+  dam_idxs <- split(names(data$sires), data$sires)
   
+  # Empty matrices to be populated by outputs
+  sire_means <- matrix(
+    0,
+    nrow     = data$dims$I,
+    ncol     = data$dims$q,
+    dimnames = list(names(dam_idxs))
+  )
+  
+  dam_means <- matrix(
+    0,
+    nrow     = nrow(data$dam_sums),
+    ncol     = data$dims$q,
+    dimnames = list(rownames(data$dam_sums))
+  )
+
+  for(sire in names(dam_idxs)) {
+    
+    sire_means[sire, ] <- sire_means[sire, ] +
+      cond_cov(sire, "group", "group", NA) %*% grand_skew
+
+    for(dam in dam_idxs[[sire]]) {
+      dam_means[dam, ] <- dam_means[dam, ] +
+        cond_cov(sire, "group", dam, NA) %*% dam_skew[dam, ]
+    }
+    
+    for(sire2 in names(dam_idxs)) {
+      sire_means[sire, ] <- sire_means[sire, ] +
+        cond_cov(sire, sire2, "group", "group") %*% sire_skew[sire2, ]
+
+      for(dam in dam_idxs[[sire]]) {
+        dam_means[dam, ] <- dam_means[dam, ] +
+          cond_cov(sire, sire2, dam, "group") %*% sire_skew[sire2, ]
+      }
+
+      for(dam2 in dam_idxs[[sire2]]) {
+        sire_means[sire, ] <- sire_means[sire, ] +
+          cond_cov(sire, sire2, "group", dam2) %*% dam_skew[dam2, ]
+
+        for(dam in dam_idxs[[sire]]) {
+          dam_means[dam, ] <- dam_means[dam, ] +
+            cond_cov(sire, sire2, dam, dam2) %*% dam_skew[dam2, ]
+        }
+        
+      }
+    }
+     
+  }
+
+  list(
+    sire = sire_means,
+    dam  = dam_means
+  )
 }
