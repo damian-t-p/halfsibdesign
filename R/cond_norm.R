@@ -124,7 +124,7 @@ cond_cov_counts <- function(init_covs, data, flat_sire = FALSE) {
     } else {
       # correlations between dam effects
       
-      if(n <= m) {
+      if(as.numeric(n) <= as.numeric(m)) {
         out_block <- main_blocks[[ns]][[n]][[m]]
       } else {
         out_block <- t(main_blocks[[ns]][[m]][[n]])

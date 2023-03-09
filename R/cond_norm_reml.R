@@ -68,7 +68,7 @@ cond_cov_reml_conj <- function(init_covs, cond_cov, data) {
   
 }
 
-cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
+cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
   
   Sigma_E     <- init_covs$ind
   
@@ -98,7 +98,9 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
     }
   }
 
-  W <- Sigma_E %*% solve(W_inv) %*% Sigma_E
+  W_orig <- solve(W_inv)
+  W_right <- W_orig %*% Sigma_E
+  W <- Sigma_E %*% W_orig %*% Sigma_E
 
 
   # List of numbers of individuals observed per dam indexed by sire
@@ -134,7 +136,7 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
       DC_sire[[toString(ns)]] <- DC_sire[[toString(ns)]] +
         n * ccov_raw(toString(ns), "group", paste(n))
       
-      DC_dam_curr[[paste(n)]] <- sum(ns) * ccov_raw(toString(ns), paste(n), "group")
+      DC_dam_curr[[paste(n)]] <- n * ccov_raw(toString(ns), paste(n), "group")
       
       for(m in ns) {
         DC_dam_curr[[paste(n)]] <- DC_dam_curr[[paste(n)]] +
@@ -145,11 +147,115 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
     }
     
   }
+
+  function(sire1_ns, sire2_ns, dam1_n, dam2_n, equal_sire_idx = FALSE, equal_dam_idx = FALSE) {
+
+    if(sire1_ns == "group") {
+      if(sire2_ns == "group") {
+        return(W_orig)
+      } else {
+        if(dam2_n == "group") {
+          return(-W_right %*% t(DC_sire[[sire2_ns]]))
+        } else {
+          return(-W_right %*% t(DC_dam[[sire2_ns]][[dam2_n]]))
+        }
+      }
+    } else if(sire2_ns == "group") {
+      if(dam1_n == "group") {
+        return(-DC_sire[[sire1_ns]] %*% t(W_right))
+      } else {
+        return(-DC_dam[[sire1_ns]][[dam1_n]] %*% t(W_right))
+      }
+    }
+    
+    if(dam1_n == "group") {
+
+      if(dam2_n == "group") {
+
+        out <- DC_sire[[sire1_ns]] %*% W %*% t(DC_sire[[sire2_ns]])
+        if(isTRUE(equal_sire_idx)) {
+          out <- out + ccov_raw(sire1_ns, "group", "group")
+        }
+        
+        return(out)
+
+      } else {
+
+        return(DC_sire[[sire1_ns]] %*% W %*% t(DC_dam[[sire2_ns]][[dam2_n]]))
+        
+      }
+
+    } else {
+
+      if(dam2_n == "group") {
+
+        return(DC_dam[[sire1_ns]][[dam1_n]] %*% W %*% t(DC_sire[[sire2_ns]]))
+        
+      } else {
+
+        out <- DC_dam[[sire1_ns]][[dam1_n]] %*% W %*% t(DC_dam[[sire2_ns]][[dam2_n]])
+        if(isTRUE(equal_sire_idx) & isTRUE(equal_dam_idx)) {
+          out <- out + ccov_raw(sire1_ns, dam1_n, dam1_n, equal_idx = TRUE)
+        }
+
+        return(out)
+
+      }
+      
+    }
+  }
   
-  list(
-    W       = W,
-    DC_sire = DC_sire,
-    DC_dam  = DC_dam
-  )
+}
+
+cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
+
+  dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
+  
+  ccov_counts <- cond_cov_counts_reml(init_covs, cond_cov, ccov_raw, data)
+  
+  function(sire1, sire2, dam1, dam2) {
+
+    if(sire1 == "group") {
+      sire1_ns <- "group"
+      dam1_n   <- NA
+    } else {
+      sire1_ns_num <- dam_counts[[sire1]]
+      sire1_ns     <- toString(sort(sire1_ns_num))
+      
+      if(dam1 == "group") {
+        dam1_n <- "group"
+      } else {
+        dam1_n <- paste(sire1_ns_num[dam1])
+      }
+    }
+
+    if(sire2 == "group") {
+      sire2_ns <- "group"
+      dam2_n   <- NA
+    } else {
+      sire2_ns_num <- dam_counts[[sire2]]
+      sire2_ns     <- toString(sort(sire2_ns_num))
+      
+      if(dam2 == "group") {
+        dam2_n <- "group"
+      } else {
+        dam2_n <- paste(sire2_ns_num[dam2])
+      }
+    }
+
+    ccov_counts(
+      sire1_ns, sire2_ns, dam1_n, dam2_n,
+      equal_sire_idx = (sire1 == sire2),
+      equal_dam_idx  = (dam1 == dam2)
+    )
+
+  }
+  
+}
+
+
+cond_mean_reml <- function(init_covs, cond_cov, data) {
+
+  Omega_E <- solve(init_covs_int)
   
 }
