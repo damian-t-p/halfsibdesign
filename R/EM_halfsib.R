@@ -41,6 +41,7 @@ EM_fit.halfsibdata <- function(data,
       ccov_raw  <- cond_cov_counts(prior_covs, data)
       ccov_reml <- cond_cov_reml(prior_covs, ccov, ccov_raw, data)
       cmean     <- cond_mean_reml(prior_covs, ccov_reml, data)
+      mu        <- cmean$grand
     } else {
       cmean <- cond_mean(prior_covs, ccov, data, prior_mean = mu)
     }
@@ -65,7 +66,7 @@ EM_fit.halfsibdata <- function(data,
       ccomp_reml <- function(sire1, sire2, dam1, dam2) {
         ccov_reml("group", "group", NA, NA) +
           ccov_reml("group", sire2, NA, "group") + ccov_reml(sire1, "group", "group", NA) +
-          ccov_reml("group", sire2, NA, dam2) + ccov_reml(sire2, "group", dam2, NA) +
+          ccov_reml("group", sire2, NA, dam2) + ccov_reml(sire1, "group", dam1, NA) +
           ccov_reml(sire1, sire2, "group", "group") +
           ccov_reml(sire1, sire2, "group", dam2) + ccov_reml(sire1, sire2, dam1, "group") +
           ccov_reml(sire1, sire2, dam1, dam2)
@@ -76,8 +77,9 @@ EM_fit.halfsibdata <- function(data,
       }
     } else {
       ccomp <- function(sire, dam1, dam2) {
-        ccov(sire, "group", "group") + ccov(sire, "group", dam2) +
-          ccov(sire, dam1, "group") + ccov(sire, dam1, dam2)
+        ccov(sire, "group", "group") +
+          ccov(sire, "group", dam2) + ccov(sire, dam1, "group") +
+          ccov(sire, dam1, dam2)
       }
     }
     
@@ -110,7 +112,7 @@ EM_fit.halfsibdata <- function(data,
             for(dam2 in dam_names[[sire2]]) {
               M_A <- M_A -
                 n_missing[[dam]] * n_missing[[dam2]] * ccomp_reml(sire, sire2, dam, dam2) *
-                (1 - 1/I) * 1/(J * K) * 1/(I-1)
+                1/(I * J * K) * 1/(I-1)
             }
           }
         }
