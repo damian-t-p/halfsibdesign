@@ -29,6 +29,24 @@ test_that("Covariance matrices work correctly for dams with equal observation nu
   expect_false(all(ccov("X2", "X3", "X3") == ccov("X2", "X3", "X4")))
 })
 
+Omega <- solve(full_prec(prior_covs, data, method = "ML"))
+idx   <- cov_idx(data, method = "ML")
+
+dam_names <- split(names(data$sires), data$sires)
+
+test_that("ccov agrees with manual inversion", {
+  for(sire in names(data$n.observed$dams)) {
+    expect_equal(Omega[idx(sire, "group"), idx(sire, "group")], ccov(sire, "group", "group"))
+    for(dam1 in dam_names[[sire]]) {
+      expect_equal(Omega[idx(sire, dam1), idx(sire, "group")], ccov(sire, dam1, "group"))
+      expect_equal(Omega[idx(sire, "group"), idx(sire, dam1)], ccov(sire, "group", dam1))
+      for(dam2 in dam_names[[sire]]) {
+         expect_equal(Omega[idx(sire, dam1), idx(sire, dam2)], ccov(sire, dam1, dam2))
+      }
+    }
+  }
+})
+
 cmean <- cond_mean(prior_covs, ccov, data)
 
 test_that("Sire means have correct dimensions", {

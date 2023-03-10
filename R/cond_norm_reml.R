@@ -1,24 +1,87 @@
-## full_prec_reml <- function(init_covs, data) {
+cov_idx <- function(data, method = "REML") {
+  I <- data$dims$I
+  J <- data$dims$J
+  K <- data$dims$K
+  q <- data$dims$q
 
-##   I <- data$dims$I
-##   J <- data$dims$J
-##   K <- data$dims$K
-##   q <- data$dims$q
-  
-##   prec <- matrix(
-##     0,
-##     nrow = q * (I * (J + 1) + 1)
-##     ncol = q * (I * (J + 1) + 1)
-##   )
+  sorted_sires <- 1:I
+  names(sorted_sires) <- sort(names(data$n.observed$dams))
 
-##   dam_names <- split(names(data$sires), data$sires)
-##   n_obs_dam 
+  sorted_dams <- rep(1:J, times = I)
+  names(sorted_dams)  <- names(data$sires[order(data$sires, names(data$sires))])
+
+  function(sire, dam) {
+    if(sire == "group") {
+      if(method == "ML") {
+        stop("Group random effect not estimated")
+      } else {
+        init_idx <- 1
+      }
+    } else if(dam == "group") {
+      init_idx <- (sorted_sires[sire] - 1) * (J + 1) + 1 + (method == "REML")
+    } else {
+      init_idx <- (sorted_sires[sire] - 1) * (J + 1) + 1 + (method == "REML") + sorted_dams[dam]
+    }
+
+    (init_idx - 1) * q + 1:q
+      
+  }
+}
+
+full_prec <- function(init_covs, data, method = "REML") {
+
+  I <- data$dims$I
+  J <- data$dims$J
+  K <- data$dims$K
+  q <- data$dims$q
+
+  Omega_E <- solve(init_covs$ind)
+  Omega_A <- solve(init_covs$sire)
+  Omega_B <- solve(init_covs$dam)
   
-##   for(sire in names(dam_names)) {
+  prec <- matrix(
+    0,
+    nrow = q * (I * (J + 1) + (method == "REML")),
+    ncol = q * (I * (J + 1) + (method == "REML"))
+  )
+
+  dam_names <- split(names(data$sires), data$sires)
+
+  idx <- cov_idx(data, method = method)
+  if(method == "REML") {
+    prec[idx("group"), idx("group")] <- sum(data$n.observed$inds) * Omega_E
+  }
+  
+  for(sire in names(dam_names)) {
+    n_obs_sire <- sum(data$n.observed$inds[dam_names[[sire]]])
+
+    if(method == "REML") {
+      prec[idx("group"), idx(sire, "group")] <- n_obs_sire * Omega_E
+      prec[idx(sire, "group"), idx("group")] <- n_obs_sire * Omega_E
+    }
     
-##   }
+    prec[idx(sire, "group"), idx(sire, "group")] <- Omega_A + n_obs_sire * Omega_E
+    
+    for(dam in dam_names[[sire]]) {
+      n_obs_dam <- data$n.observed$inds[dam] 
+
+      if(method == "REML") {
+        prec[idx("group"), idx(sire, dam)] <- n_obs_dam * Omega_E
+        prec[idx(sire, dam), idx("group")] <- n_obs_dam * Omega_E
+      }
+      
+      prec[idx(sire, "group"), idx(sire, dam)] <- n_obs_dam * Omega_E
+      prec[idx(sire, dam), idx(sire, "group")] <- n_obs_dam * Omega_E
+
+      prec[idx(sire, dam), idx(sire, dam)] <- Omega_B + n_obs_dam * Omega_E
+    }
+    
+  }
+
+  return(prec)
   
-## }
+}
+
 
 cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
 
@@ -85,15 +148,20 @@ cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
       DC_sire[[toString(ns)]] <- DC_sire[[toString(ns)]] +
         n * ccov_raw(toString(ns), "group", paste(n))
       
-      DC_dam_curr[[paste(n)]] <- n * ccov_raw(toString(ns), paste(n), "group")
+      DC_dam_curr[[paste(n)]] <- sum(ns) * ccov_raw(toString(ns), paste(n), "group")
       
       for(m in ns) {
         DC_dam_curr[[paste(n)]] <- DC_dam_curr[[paste(n)]] +
           m * ccov_raw(toString(ns), paste(n), paste(m))
       }
 
-      DC_dam[[toString(ns)]] <- DC_dam_curr
+      # Add the repeated term in the DC multiplication
+      DC_dam_curr[[paste(n)]] <- DC_dam_curr[[paste(n)]] -
+        n * ccov_raw(toString(ns), paste(n), paste(n)) +
+        n * ccov_raw(toString(ns), paste(n), paste(n), equal_idx = TRUE)
     }
+
+    DC_dam[[toString(ns)]] <- DC_dam_curr
     
   }
 
@@ -125,29 +193,36 @@ cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
         if(isTRUE(equal_sire_idx)) {
           out <- out + ccov_raw(sire1_ns, "group", "group")
         }
-        
         return(out)
 
       } else {
 
-        return(DC_sire[[sire1_ns]] %*% W %*% t(DC_dam[[sire2_ns]][[dam2_n]]))
-        
+        out <- DC_sire[[sire1_ns]] %*% W %*% t(DC_dam[[sire2_ns]][[dam2_n]])
+        if(isTRUE(equal_sire_idx)) {
+          out <- out + ccov_raw(sire1_ns, "group", dam2_n)
+        }
+        return(out)
+      
       }
 
     } else {
 
       if(dam2_n == "group") {
-
-        return(DC_dam[[sire1_ns]][[dam1_n]] %*% W %*% t(DC_sire[[sire2_ns]]))
+        
+        out <- DC_dam[[sire1_ns]][[dam1_n]] %*% W %*% t(DC_sire[[sire2_ns]])
+        if(isTRUE(equal_sire_idx)) {
+          out <- out + ccov_raw(sire1_ns, dam1_n, "group")
+        }
+        return(out)
         
       } else {
 
         out <- DC_dam[[sire1_ns]][[dam1_n]] %*% W %*% t(DC_dam[[sire2_ns]][[dam2_n]])
-        if(isTRUE(equal_sire_idx) & isTRUE(equal_dam_idx)) {
-          out <- out + ccov_raw(sire1_ns, dam1_n, dam1_n, equal_idx = TRUE)
+        if(isTRUE(equal_sire_idx)) {
+          out <- out + ccov_raw(sire1_ns, dam1_n, dam2_n, equal_idx = equal_dam_idx)
         }
-
         return(out)
+
 
       }
       

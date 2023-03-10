@@ -103,7 +103,7 @@ df_unbalanced <- df_full %>%
 
 
 data <- df_unbalanced %>%
-  mutate(intercept = 1) %>%
+  dplyr::mutate(intercept = 1) %>%
   halfsibdata(
     sire_name = intercept,
     dam_name  = sire,
