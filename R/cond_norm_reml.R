@@ -237,6 +237,25 @@ cond_cov_reml <- function(init_covs, ccov_raw, ccov, data) {
 
   dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
   ccov_counts <- cond_cov_counts_reml(init_covs, ccov_raw, ccov, data)
+
+  sire_names               <- names(data$n.observed$dams)
+  sire_count_lookup        <- character(length(data$n.observed$dams))
+  names(sire_count_lookup) <- sire_names
+
+  for(i in 1:length(sire_names)) {
+    sire                    <- sire_names[i]
+    sire_ns_num             <- dam_counts[[sire]]
+    sire_count_lookup[sire] <- to_str(sort.int(sire_ns_num))
+  }
+  
+  dam_names               <- names(data$n.observed$inds)
+  dam_count_lookup        <- character(length(data$n.observed$inds))
+  names(dam_count_lookup) <- dam_names
+
+  for(i in 1:length(dam_names)) {
+    dam                   <- dam_names[i]
+    dam_count_lookup[dam] <- to_str(data$n.observed$inds[dam])
+  }
   
   function(sire1, sire2, dam1, dam2) {
 
@@ -244,13 +263,13 @@ cond_cov_reml <- function(init_covs, ccov_raw, ccov, data) {
       sire1_ns <- "group"
       dam1_n   <- NA
     } else {
-      sire1_ns_num <- dam_counts[[sire1]]
-      sire1_ns     <- to_str(sort.int(sire1_ns_num))
+      
+      sire1_ns <- sire_count_lookup[sire1]
       
       if(dam1 == "group") {
         dam1_n <- "group"
       } else {
-        dam1_n <- paste(sire1_ns_num[dam1])
+        dam1_n <- dam_count_lookup[dam1]
       }
     }
 
@@ -258,13 +277,12 @@ cond_cov_reml <- function(init_covs, ccov_raw, ccov, data) {
       sire2_ns <- "group"
       dam2_n   <- NA
     } else {
-      sire2_ns_num <- dam_counts[[sire2]]
-      sire2_ns     <- to_str(sort.int(sire2_ns_num))
+      sire2_ns     <- sire_count_lookup[sire2]
       
       if(dam2 == "group") {
         dam2_n <- "group"
       } else {
-        dam2_n <- paste(sire2_ns_num[dam2])
+        dam2_n <- dam_count_lookup[dam2]
       }
     }
 
