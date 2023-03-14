@@ -83,8 +83,8 @@ full_prec <- function(init_covs, data, method = "REML") {
 }
 
 
-cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
-
+cond_cov_counts_reml <- function(init_covs, ccov_raw, ccov = cond_cov(ccov_raw), data) {
+  
   Sigma_E     <- init_covs$ind
   
   n_obs_total <- sum(data$n.observed$inds)
@@ -95,20 +95,20 @@ cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
   for(sire in names(dam_names)) {
     n_obs_sire <- sum(data$n.observed$inds[dam_names[[sire]]])
 
-    W_inv <- W_inv - n_obs_sire^2 * cond_cov(sire, "group", "group")
+    W_inv <- W_inv - n_obs_sire^2 * ccov(sire, "group", "group")
 
     for(dam in dam_names[[sire]]) {
 
       n_obs_dam <- data$n.observed$inds[dam]
       
-      W_inv <- W_inv - n_obs_dam * n_obs_sire * cond_cov(sire, "group", dam)
-      W_inv <- W_inv - n_obs_dam * n_obs_sire * cond_cov(sire, dam, "group")
+      W_inv <- W_inv - n_obs_dam * n_obs_sire * ccov(sire, "group", dam)
+      W_inv <- W_inv - n_obs_dam * n_obs_sire * ccov(sire, dam, "group")
 
       for(dam2 in dam_names[[sire]]) {
 
         n_obs_dam2 <- data$n.observed$inds[dam2]
         
-        W_inv <- W_inv - n_obs_dam * n_obs_dam2 * cond_cov(sire, dam, dam2)
+        W_inv <- W_inv - n_obs_dam * n_obs_dam2 * ccov(sire, dam, dam2)
       }
     }
   }
@@ -120,7 +120,7 @@ cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
 
   # All observation count vectors that are distince up to reordering
   unique_count_vecs <- dam_counts %>%
-    lapply(\(v) unname(sort(v))) %>%
+    lapply(\(v) unname(sort.int(v))) %>%
     unique()
 
   # All observation counts per dat
@@ -141,29 +141,31 @@ cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
 
   for(ns in unique_count_vecs) {
 
-    DC_sire[[toString(ns)]] <- sum(ns) * ccov_raw(toString(ns), "group", "group")
+    ns_str <- to_str(ns)
+    
+    DC_sire[[ns_str]] <- sum(ns) * ccov_raw(ns_str, "group", "group")
     DC_dam_curr <- list()
 
     for(n in ns) {
-      DC_sire[[toString(ns)]] <- DC_sire[[toString(ns)]] +
-        n * ccov_raw(toString(ns), "group", paste(n))
+      DC_sire[[ns_str]] <- DC_sire[[ns_str]] +
+        n * ccov_raw(ns_str, "group", paste(n))
       
-      DC_dam_curr[[paste(n)]] <- sum(ns) * ccov_raw(toString(ns), paste(n), "group")
+      DC_dam_curr[[paste(n)]] <- sum(ns) * ccov_raw(ns_str, paste(n), "group")
       
       for(m in ns) {
         DC_dam_curr[[paste(n)]] <- DC_dam_curr[[paste(n)]] +
-          m * ccov_raw(toString(ns), paste(n), paste(m))
+          m * ccov_raw(ns_str, paste(n), paste(m))
       }
 
       # Add the repeated term in the DC multiplication
       DC_dam_curr[[paste(n)]] <- DC_dam_curr[[paste(n)]] -
-        n * ccov_raw(toString(ns), paste(n), paste(n)) +
-        n * ccov_raw(toString(ns), paste(n), paste(n), equal_idx = TRUE)
+        n * ccov_raw(ns_str, paste(n), paste(n)) +
+        n * ccov_raw(ns_str, paste(n), paste(n), equal_idx = TRUE)
     }
 
-    DC_dam[[toString(ns)]] <- DC_dam_curr
+    DC_dam[[ns_str]] <- DC_dam_curr
     
-  }
+  }  
 
   function(sire1_ns, sire2_ns, dam1_n, dam2_n, equal_sire_idx = FALSE, equal_dam_idx = FALSE) {
 
@@ -231,11 +233,10 @@ cond_cov_counts_reml <- function(init_covs, cond_cov, ccov_raw, data) {
   
 }
 
-cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
+cond_cov_reml <- function(init_covs, ccov_raw, ccov, data) {
 
   dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
-  
-  ccov_counts <- cond_cov_counts_reml(init_covs, cond_cov, ccov_raw, data)
+  ccov_counts <- cond_cov_counts_reml(init_covs, ccov_raw, ccov, data)
   
   function(sire1, sire2, dam1, dam2) {
 
@@ -244,7 +245,7 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
       dam1_n   <- NA
     } else {
       sire1_ns_num <- dam_counts[[sire1]]
-      sire1_ns     <- toString(sort(sire1_ns_num))
+      sire1_ns     <- to_str(sort.int(sire1_ns_num))
       
       if(dam1 == "group") {
         dam1_n <- "group"
@@ -258,7 +259,7 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
       dam2_n   <- NA
     } else {
       sire2_ns_num <- dam_counts[[sire2]]
-      sire2_ns     <- toString(sort(sire2_ns_num))
+      sire2_ns     <- to_str(sort.int(sire2_ns_num))
       
       if(dam2 == "group") {
         dam2_n <- "group"
@@ -277,8 +278,7 @@ cond_cov_reml <- function(init_covs, cond_cov, ccov_raw, data) {
   
 }
 
-
-cond_mean_reml <- function(init_covs, cond_cov, data) {
+cond_mean_reml <- function(init_covs, ccov_reml, data) {
 
   Omega_E <- solve(init_covs$ind)
 
@@ -304,42 +304,42 @@ cond_mean_reml <- function(init_covs, cond_cov, data) {
     dimnames = list(rownames(data$dam_sums))
   )
 
-  glob_mean <- cond_cov("group", "group", NA, NA) %*% grand_skew
+  glob_mean <- ccov_reml("group", "group", NA, NA) %*% grand_skew
 
   for(sire2 in names(dam_idxs)) {
-    glob_mean <- glob_mean + cond_cov("group", sire2, NA, "group") %*% sire_skew[sire2, ]
+    glob_mean <- glob_mean + ccov_reml("group", sire2, NA, "group") %*% sire_skew[sire2, ]
 
     for(dam2 in dam_idxs[[sire2]]) {
-      glob_mean <- glob_mean + cond_cov("group", sire2, NA, dam2) %*% dam_skew[dam2, ]
+      glob_mean <- glob_mean + ccov_reml("group", sire2, NA, dam2) %*% dam_skew[dam2, ]
     }
   }
 
   for(sire in names(dam_idxs)) {
     
     sire_means[sire, ] <- sire_means[sire, ] +
-      cond_cov(sire, "group", "group", NA) %*% grand_skew
+      ccov_reml(sire, "group", "group", NA) %*% grand_skew
 
     for(dam in dam_idxs[[sire]]) {
       dam_means[dam, ] <- dam_means[dam, ] +
-        cond_cov(sire, "group", dam, NA) %*% grand_skew
+        ccov_reml(sire, "group", dam, NA) %*% grand_skew
     }
     
     for(sire2 in names(dam_idxs)) {
       sire_means[sire, ] <- sire_means[sire, ] +
-        cond_cov(sire, sire2, "group", "group") %*% sire_skew[sire2, ]
+        ccov_reml(sire, sire2, "group", "group") %*% sire_skew[sire2, ]
 
       for(dam in dam_idxs[[sire]]) {
         dam_means[dam, ] <- dam_means[dam, ] +
-          cond_cov(sire, sire2, dam, "group") %*% sire_skew[sire2, ]
+          ccov_reml(sire, sire2, dam, "group") %*% sire_skew[sire2, ]
       }
 
       for(dam2 in dam_idxs[[sire2]]) {
         sire_means[sire, ] <- sire_means[sire, ] +
-          cond_cov(sire, sire2, "group", dam2) %*% dam_skew[dam2, ]
+          ccov_reml(sire, sire2, "group", dam2) %*% dam_skew[dam2, ]
 
         for(dam in dam_idxs[[sire]]) {
           dam_means[dam, ] <- dam_means[dam, ] +
-            cond_cov(sire, sire2, dam, dam2) %*% dam_skew[dam2, ]
+            ccov_reml(sire, sire2, dam, dam2) %*% dam_skew[dam2, ]
         }
         
       }

@@ -139,8 +139,8 @@ new_halfsibdata <- function(sos,
         K = K
       ),
       n.observed = list(
-        dams = obs_dams,
-        inds = obs_inds
+        dams = as.integer(obs_dams),
+        inds = as.integer(obs_inds)
       )
     ),
     class = "halfsibdata"

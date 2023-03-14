@@ -15,7 +15,7 @@ prior_covs <- list(
   sire = rnorm(q*q) %>% matrix(nrow = 3) %>% {. %*% t(.)}
 )
 
-ccov <- cond_cov(prior_covs, data)
+ccov <- cond_cov_counts(prior_covs, data) %>% cond_cov(data)
 
 test_that("Covariance matrices are symmetric", {
   expect_equal(ccov("X1", "X1", "X2"), t(ccov("X1", "X2", "X1")))

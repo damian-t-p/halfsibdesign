@@ -32,8 +32,8 @@ balance.halfsibdata <- function(data, means, globmean = rep(0, data$dims$q)) {
     I           = data$dims$I,
     J           = data$dims$J,
     K           = data$dims$K,
-    obs_dams    = data$n.observed$dams * 0 + data$dims$J,
-    obs_inds    = data$n.observed$inds * 0 + data$dims$K,
+    obs_dams    = data$n.observed$dams * 0L + data$dims$J,
+    obs_inds    = data$n.observed$inds * 0L + data$dims$K,
     level_names = data$level_names
   )
 }
@@ -58,7 +58,7 @@ include_unobs_dams <- function(data) {
   data$sires             <- c(data$sires, new_sires)
   data$n.observed$dams[] <- data$dims$J
   data$n.observed$inds   <- c(data$n.observed$inds,
-                              setNames(rep(0, n_new), names(new_sires)))
+                              setNames(rep(0L, n_new), names(new_sires)))
 
   data
 }

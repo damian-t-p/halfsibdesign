@@ -9,7 +9,7 @@ cond_cov_mats <- function(init_covs, data, flat_sire = FALSE) {
 
   # All observation count vectors that are distince up to reordering
   unique_count_vecs <- dam_counts %>%
-    lapply(\(v) unname(sort(v))) %>%
+    lapply(\(v) unname(sort.int(v))) %>%
     unique()
 
   # All observation counts per dat
@@ -77,9 +77,9 @@ cond_cov_mats <- function(init_covs, data, flat_sire = FALSE) {
       
     }
 
-    top_blocks[[toString(ns)]]  <- top_blocks_curr
-    main_blocks[[toString(ns)]] <- main_blocks_l1
-    W_blocks[[toString(ns)]]    <- W(ns)
+    top_blocks[[to_str(ns)]]  <- top_blocks_curr
+    main_blocks[[to_str(ns)]] <- main_blocks_l1
+    W_blocks[[to_str(ns)]]    <- W(ns)
   }
 
   list(
@@ -166,58 +166,33 @@ cond_cov_counts <- function(init_covs, data, flat_sire = FALSE) {
 #' covariance of `alpha[i]` and `beta[ik]`. and similarly if `j == "group"`.
 #' 
 #' @export
-cond_cov <- function(init_covs, data, flat_sire = FALSE) {
-
-  mats <- cond_cov_mats(init_covs, data, flat_sire)
-
-  top_blocks  <- mats$top_blocks
-  main_blocks <- mats$main_blocks
-  W_blocks    <- mats$W_blocks
-  D_inv       <- mats$D_inv
+cond_cov <- function(ccov_counts, data, ...) {
 
   dam_counts  <- split(data$n.observed$inds[names(data$sires)], data$sires)
   
-  # The closure function looks up the relevant entry in `top_blocks` and `main_blocks`,
-  # additionally adding D[ij]^(-1) as required along the block diagonal.
-  #
-  # i, j, k should all be sire and dam labels, not integers
-  function(i, j, k) {
-    ns <- dam_counts[[i]]
+  function(sire, dam1, dam2) {
 
-    ns_sort <- sort(ns)
-
-    if(j == "group") {
-      # correlation with the sire effect along first row
-      
-      if(k == "group") {
-        return(W_blocks[[toString(ns_sort)]])
-      } else {
-        return(top_blocks[[toString(ns_sort)]][[paste(ns[k])]])
-      }
-    } else if (k == "group") {
-      # correlation with the sire effect along the first column
-      
-      return(t(top_blocks[[toString(ns_sort)]][[paste(ns[j])]]))
+    sire_ns_num <- dam_counts[[sire]]
+    sire_ns     <- to_str(sort.int(sire_ns_num))
+    
+    if(dam1 == "group") {
+      dam1_n <- "group"
     } else {
-      # correlations between dam effects
-      
-      n <- ns[j]
-      m <- ns[k]
-      
-      if(n <= m) {
-        out_block <- main_blocks[[toString(ns_sort)]][[paste(n)]][[paste(m)]]
-      } else {
-        out_block <- t(main_blocks[[toString(ns_sort)]][[paste(m)]][[paste(n)]])
-      }
-
-      # Add additional blocks along main block diagonal
-      if(j == k) {
-        out_block <- out_block + D_inv[[paste(n)]]
-      }
-
-      return(out_block)
-      
+      dam1_n <- paste(sire_ns_num[dam1])
     }
+
+    if(dam2 == "group") {
+      dam2_n <- "group"
+    } else {
+      dam2_n <- paste(sire_ns_num[dam2])
+    }
+
+    ccov_counts(
+      sire_ns, dam1_n, dam2_n,
+      equal_idx  = (dam1 == dam2),
+      ...
+    )
+
   }
 }
 
@@ -240,7 +215,7 @@ cond_cov <- function(init_covs, data, flat_sire = FALSE) {
 #' means of `alpha[i]` and `beta[ij]` respectively.
 #' 
 #' @export
-cond_mean <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$dims$q)) {
+cond_mean <- function(init_covs, ccov, data, prior_mean = rep(0, data$dims$q)) {
 
   Omega_E <- solve(init_covs$ind)
   
@@ -274,16 +249,16 @@ cond_mean <- function(init_covs, cond_cov, data, prior_mean = rep(0, data$dims$q
     # Indices of dams whose sire is `sire`
     dams <- dam_idxs[[sire]]
     
-    sire_means[sire, ] <- sire_means[sire, ] + cond_cov(sire, "group", "group") %*% sire_skew[sire, ]
+    sire_means[sire, ] <- sire_means[sire, ] + ccov(sire, "group", "group") %*% sire_skew[sire, ]
     for(dam in dams) {
-      sire_means[sire, ] <- sire_means[sire, ] + cond_cov(sire, "group", dam) %*% dam_skew[dam, ]
+      sire_means[sire, ] <- sire_means[sire, ] + ccov(sire, "group", dam) %*% dam_skew[dam, ]
     }
     
     for(dam in dams) {
 
-      dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, "group") %*% sire_skew[sire, ]
+      dam_means[dam, ] <- dam_means[dam, ] + ccov(sire, dam, "group") %*% sire_skew[sire, ]
       for(dam2 in dams) {
-        dam_means[dam, ] <- dam_means[dam, ] + cond_cov(sire, dam, dam2) %*% dam_skew[dam2, ]
+        dam_means[dam, ] <- dam_means[dam, ] + ccov(sire, dam, dam2) %*% dam_skew[dam2, ]
       }
         
     }
@@ -312,7 +287,7 @@ make_W <- function(init_covs, data, flat_sire = FALSE) {
   ob_counts <- split(data$n.observed$inds[names(data$sires)], data$sires)
 
   unique_count_vecs <- ob_counts %>%
-    lapply(\(v) unname(sort(v))) %>%
+    lapply(\(v) unname(sort.int(v))) %>%
     unique()
 
   unique_counts <- unique(unname(data$n.observed$inds))
@@ -343,16 +318,16 @@ make_W <- function(init_covs, data, flat_sire = FALSE) {
   W_list <- list()
   for(n_vec in unique_count_vecs) {
     D_curr <- Reduce(`+`, D[paste(n_vec)])
-
+    
     if(isTRUE(flat_sire)) {
-      W_list[[toString(n_vec)]] <- solve(U_invQ %*% D_curr %*% t(U_invQ))
+      W_list[[to_str(n_vec)]] <- solve(U_invQ %*% D_curr %*% t(U_invQ))
     } else {
-      W_list[[toString(n_vec)]] <- solve(diag(q) + Sigma_A %*% U_invQ %*% D_curr %*% t(U_invQ), Sigma_A)
+      W_list[[to_str(n_vec)]] <- solve(diag(q) + Sigma_A %*% U_invQ %*% D_curr %*% t(U_invQ), Sigma_A)
     }
   }
 
   function(n_vec) {
-    W_list[[toString(sort(n_vec))]]
+    W_list[[to_str(sort.int(n_vec))]]
   }
 }
 

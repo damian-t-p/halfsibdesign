@@ -13,7 +13,8 @@ EM_fit.halfsibdata <- function(data,
                                method     = c("ML", "REML", "ML_nofix"),
                                flat_sire  = (method == "ML_nofix"),
                                max_iter   = 1000,
-                               err.tol    = 1e-6) {
+                               err.tol    = 1e-6,
+                               verbose    = FALSE) {
 
   method <- match.arg(method)  
 
@@ -36,10 +37,11 @@ EM_fit.halfsibdata <- function(data,
   
   for(iter in 1:max_iter) {
 
-    ccov  <- cond_cov(prior_covs, data, flat_sire = flat_sire)
+    ccov_raw  <- cond_cov_counts(prior_covs, data)
+    ccov      <- cond_cov(ccov_raw, data)
+    
     if(method == "REML") {
-      ccov_raw  <- cond_cov_counts(prior_covs, data)
-      ccov_reml <- cond_cov_reml(prior_covs, ccov, ccov_raw, data)
+      ccov_reml <- cond_cov_reml(prior_covs, ccov_raw, ccov, data)
       cmean     <- cond_mean_reml(prior_covs, ccov_reml, data)
       mu        <- cmean$grand
     } else {
@@ -138,17 +140,21 @@ EM_fit.halfsibdata <- function(data,
       dam = curr_primal$S2,
       sire = curr_primal$S3
     )
-
-    ## print("-----------------------------------")
-    ## print(prior_covs)
     
     if(iter > 1) {
       err <- mat_err(prev_primal, curr_primal, list(I * J * (K-1), I * (J-1), I - (E_method == "ML")))
+
+      if(isTRUE(verbose)) {
+        print("------------------")
+        print(paste("Iter:", iter))
+        print(paste("Err: ", err))
+      }
+      
       if(err < err.tol) {break}
     } else {
       err <- NA
     }
-
+    
     prev_primal <- curr_primal
   }
 

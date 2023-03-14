@@ -15,10 +15,10 @@ prior_covs <- list(
   sire = rnorm(q*q) %>% matrix(nrow = 3) %>% {. %*% t(.)}
 )
 
-ccov     <- cond_cov(prior_covs, data)
 ccov_raw <- cond_cov_counts(prior_covs, data)
+ccov     <- cond_cov(ccov_raw, data)
 
-ccov_reml <- cond_cov_reml(prior_covs, ccov, ccov_raw, data)
+ccov_reml <- cond_cov_reml(prior_covs, ccov_raw, ccov, data)
 
 Omega <- solve(full_prec(prior_covs, data, method = "REML"))
 idx   <- cov_idx(data)
